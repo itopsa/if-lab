@@ -190,7 +190,7 @@ try {
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="fas fa-gamepad me-2"></i>Game Details (Alternative)</h2>
+    <h2><i class="fas fa-gamepad me-2"></i>Game Details</h2>
     <div class="text-muted"><?php echo number_format($stats['total_games']); ?> games found</div>
 </div>
 
