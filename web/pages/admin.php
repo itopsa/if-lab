@@ -29,6 +29,29 @@ try {
         }
     }
     
+    // Update Bowler
+    if (isset($_POST['update_bowler'])) {
+        $bowler_id = (int)$_POST['bowler_id'];
+        $nickname = trim($_POST['nickname']);
+        $dexterity = $_POST['dexterity'];
+        $style = $_POST['style'];
+        $uba_id = trim($_POST['uba_id']);
+        $usbc_id = trim($_POST['usbc_id']);
+        $home_house_id = $_POST['home_house_id'] ?: null;
+        
+        if (empty($nickname)) {
+            $error = "Nickname is required";
+        } else {
+            $stmt = $pdo->prepare("
+                UPDATE bowlers 
+                SET nickname = ?, dexterity = ?, style = ?, uba_id = ?, usbc_id = ?, home_house_id = ?
+                WHERE bowler_id = ?
+            ");
+            $stmt->execute([$nickname, $dexterity, $style, $uba_id, $usbc_id, $home_house_id, $bowler_id]);
+            $message = "Bowler '$nickname' updated successfully!";
+        }
+    }
+    
     // Add Location
     if (isset($_POST['add_location'])) {
         $name = trim($_POST['location_name']);
@@ -79,6 +102,15 @@ try {
     $bowlers = $pdo->query("SELECT bowler_id, nickname FROM bowlers ORDER BY nickname")->fetchAll();
     $locations = $pdo->query("SELECT location_id, name FROM locations ORDER BY name")->fetchAll();
     
+    // Get bowler details for update form
+    $selected_bowler = null;
+    if (isset($_GET['update_bowler_id'])) {
+        $bowler_id = (int)$_GET['update_bowler_id'];
+        $stmt = $pdo->prepare("SELECT * FROM bowlers WHERE bowler_id = ?");
+        $stmt->execute([$bowler_id]);
+        $selected_bowler = $stmt->fetch();
+    }
+    
 } catch(PDOException $e) {
     $error = "Database Error: " . $e->getMessage();
 }
@@ -106,7 +138,7 @@ try {
 <!-- Admin Forms -->
 <div class="row">
     <!-- Add Bowler -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0"><i class="fas fa-user-plus me-2"></i>Add Bowler</h5>
@@ -172,8 +204,103 @@ try {
         </div>
     </div>
 
+    <!-- Update Bowler -->
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-user-edit me-2"></i>Update Bowler</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" class="mb-3">
+                    <div class="mb-3">
+                        <label for="update_bowler_id" class="form-label">Select Bowler</label>
+                        <select name="update_bowler_id" id="update_bowler_id" class="form-select" onchange="this.form.submit()">
+                            <option value="">Choose a bowler...</option>
+                            <?php foreach ($bowlers as $bowler): ?>
+                                <option value="<?php echo $bowler['bowler_id']; ?>" 
+                                        <?php echo (isset($_GET['update_bowler_id']) && $_GET['update_bowler_id'] == $bowler['bowler_id']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($bowler['nickname']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                </form>
+                
+                <?php if ($selected_bowler): ?>
+                    <form method="POST">
+                        <input type="hidden" name="bowler_id" value="<?php echo $selected_bowler['bowler_id']; ?>">
+                        <div class="mb-3">
+                            <label for="update_nickname" class="form-label">Nickname *</label>
+                            <input type="text" name="nickname" id="update_nickname" class="form-control" 
+                                   value="<?php echo htmlspecialchars($selected_bowler['nickname']); ?>" required>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="update_dexterity" class="form-label">Dexterity</label>
+                                    <select name="dexterity" id="update_dexterity" class="form-select">
+                                        <option value="">Select</option>
+                                        <option value="Right" <?php echo ($selected_bowler['dexterity'] == 'Right') ? 'selected' : ''; ?>>Right</option>
+                                        <option value="Left" <?php echo ($selected_bowler['dexterity'] == 'Left') ? 'selected' : ''; ?>>Left</option>
+                                        <option value="Ambidextrous" <?php echo ($selected_bowler['dexterity'] == 'Ambidextrous') ? 'selected' : ''; ?>>Ambidextrous</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="update_style" class="form-label">Style</label>
+                                    <select name="style" id="update_style" class="form-select">
+                                        <option value="">Select</option>
+                                        <option value="1 Handed" <?php echo ($selected_bowler['style'] == '1 Handed') ? 'selected' : ''; ?>>1 Handed</option>
+                                        <option value="2 Handed" <?php echo ($selected_bowler['style'] == '2 Handed') ? 'selected' : ''; ?>>2 Handed</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="update_uba_id" class="form-label">UBA ID</label>
+                                    <input type="text" name="uba_id" id="update_uba_id" class="form-control" 
+                                           value="<?php echo htmlspecialchars($selected_bowler['uba_id'] ?? ''); ?>">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="update_usbc_id" class="form-label">USBC ID</label>
+                                    <input type="text" name="usbc_id" id="update_usbc_id" class="form-control" 
+                                           value="<?php echo htmlspecialchars($selected_bowler['usbc_id'] ?? ''); ?>">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <label for="update_home_house_id" class="form-label">Home House</label>
+                            <select name="home_house_id" id="update_home_house_id" class="form-select">
+                                <option value="">Select Location</option>
+                                <?php foreach ($locations as $location): ?>
+                                    <option value="<?php echo $location['location_id']; ?>" 
+                                            <?php echo ($selected_bowler['home_house_id'] == $location['location_id']) ? 'selected' : ''; ?>>
+                                        <?php echo htmlspecialchars($location['name']); ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <button type="submit" name="update_bowler" class="btn btn-info w-100">
+                            <i class="fas fa-save me-2"></i>Update Bowler
+                        </button>
+                    </form>
+                <?php else: ?>
+                    <div class="text-center text-muted py-4">
+                        <i class="fas fa-user-edit fa-3x mb-3"></i>
+                        <p>Select a bowler from the dropdown above to update their information.</p>
+                    </div>
+                <?php endif; ?>
+            </div>
+        </div>
+    </div>
+
     <!-- Add Location -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0"><i class="fas fa-map-marker-plus me-2"></i>Add Location</h5>
@@ -207,7 +334,7 @@ try {
     </div>
 
     <!-- Add Game Series -->
-    <div class="col-md-4">
+    <div class="col-md-3">
         <div class="card">
             <div class="card-header">
                 <h5 class="mb-0"><i class="fas fa-plus-circle me-2"></i>Add Game Series</h5>
