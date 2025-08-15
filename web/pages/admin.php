@@ -212,6 +212,7 @@ try {
             </div>
             <div class="card-body">
                 <form method="GET" class="mb-3">
+                    <input type="hidden" name="page" value="admin">
                     <div class="mb-3">
                         <label for="update_bowler_id" class="form-label">Select Bowler</label>
                         <select name="update_bowler_id" id="update_bowler_id" class="form-select" onchange="this.form.submit()">
