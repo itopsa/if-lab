@@ -143,7 +143,7 @@ try {
                                     </span>
                                 </td>
                                 <td>
-                                    <strong><?php echo htmlspecialchars($location['name']); ?></strong>
+                                    <strong><?php echo htmlspecialchars($location['location_name']); ?></strong>
                                 </td>
                                 <td><?php echo htmlspecialchars($location['city']); ?></td>
                                 <td><?php echo htmlspecialchars($location['state']); ?></td>
