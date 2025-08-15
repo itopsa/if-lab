@@ -6,7 +6,7 @@ $config = [
     'host' => 'localhost',
     'dbname' => 'bowling_db',
     'username' => 'root',  // Change this to your MySQL username
-    'password' => '',      // Change this to your MySQL password
+    'password' => 'MySecureP@ssw0rd2024!',      // Change this to your MySQL password
     'charset' => 'utf8mb4'
 ];
 
