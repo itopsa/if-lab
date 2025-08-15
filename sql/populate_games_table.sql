@@ -4,10 +4,8 @@
 
 USE bowling_db;
 
--- Clear existing games data (optional)
--- DELETE FROM games;
-
--- Insert individual games from game_series table
+-- Clear existing games data first
+DELETE FROM games;
 INSERT INTO games (series_id, game_number, score)
 SELECT 
     series_id,
