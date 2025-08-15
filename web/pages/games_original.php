@@ -12,127 +12,42 @@ try {
     $score_min = isset($_GET['score_min']) ? (int)$_GET['score_min'] : '';
     $score_max = isset($_GET['score_max']) ? (int)$_GET['score_max'] : '';
     
-    // Build the query to extract individual games from game_series
+    // Build the query with filters using game_details view
     $query = "
-        SELECT 
-            gs.series_id,
-            b.nickname AS bowler_name,
-            l.name AS location_name,
-            gs.series_type,
-            gs.event_date,
-            gs.game1_score,
-            gs.game2_score,
-            gs.game3_score,
-            gs.total_score AS series_total,
-            gs.average_score AS series_average,
-            'Game 1' as game_label,
-            1 as game_number,
-            gs.game1_score as score,
-            CASE 
-                WHEN gs.game1_score >= 300 THEN 'Perfect Game'
-                WHEN gs.game1_score >= 250 THEN 'Excellent'
-                WHEN gs.game1_score >= 200 THEN 'Good'
-                WHEN gs.game1_score >= 150 THEN 'Average'
-                ELSE 'Below Average'
-            END AS game_rating
-        FROM game_series gs
-        JOIN bowlers b ON gs.bowler_id = b.bowler_id
-        LEFT JOIN locations l ON gs.location_id = l.location_id
-        WHERE gs.game1_score > 0
-        
-        UNION ALL
-        
-        SELECT 
-            gs.series_id,
-            b.nickname AS bowler_name,
-            l.name AS location_name,
-            gs.series_type,
-            gs.event_date,
-            gs.game1_score,
-            gs.game2_score,
-            gs.game3_score,
-            gs.total_score AS series_total,
-            gs.average_score AS series_average,
-            'Game 2' as game_label,
-            2 as game_number,
-            gs.game2_score as score,
-            CASE 
-                WHEN gs.game2_score >= 300 THEN 'Perfect Game'
-                WHEN gs.game2_score >= 250 THEN 'Excellent'
-                WHEN gs.game2_score >= 200 THEN 'Good'
-                WHEN gs.game2_score >= 150 THEN 'Average'
-                ELSE 'Below Average'
-            END AS game_rating
-        FROM game_series gs
-        JOIN bowlers b ON gs.bowler_id = b.bowler_id
-        LEFT JOIN locations l ON gs.location_id = l.location_id
-        WHERE gs.game2_score > 0
-        
-        UNION ALL
-        
-        SELECT 
-            gs.series_id,
-            b.nickname AS bowler_name,
-            l.name AS location_name,
-            gs.series_type,
-            gs.event_date,
-            gs.game1_score,
-            gs.game2_score,
-            gs.game3_score,
-            gs.total_score AS series_total,
-            gs.average_score AS series_average,
-            'Game 3' as game_label,
-            3 as game_number,
-            gs.game3_score as score,
-            CASE 
-                WHEN gs.game3_score >= 300 THEN 'Perfect Game'
-                WHEN gs.game3_score >= 250 THEN 'Excellent'
-                WHEN gs.game3_score >= 200 THEN 'Good'
-                WHEN gs.game3_score >= 150 THEN 'Average'
-                ELSE 'Below Average'
-            END AS game_rating
-        FROM game_series gs
-        JOIN bowlers b ON gs.bowler_id = b.bowler_id
-        LEFT JOIN locations l ON gs.location_id = l.location_id
-        WHERE gs.game3_score > 0
+        SELECT * FROM game_details
+        WHERE 1=1
     ";
     
-    // Add filters
-    $where_conditions = [];
     $params = [];
     
     if ($bowler_filter) {
-        $where_conditions[] = "bowler_name LIKE ?";
+        $query .= " AND bowler_name LIKE ?";
         $params[] = "%$bowler_filter%";
     }
     
     if ($location_filter) {
-        $where_conditions[] = "location_name LIKE ?";
+        $query .= " AND location_name LIKE ?";
         $params[] = "%$location_filter%";
     }
     
     if ($series_type_filter) {
-        $where_conditions[] = "series_type = ?";
+        $query .= " AND series_type = ?";
         $params[] = $series_type_filter;
     }
     
     if ($game_number_filter) {
-        $where_conditions[] = "game_number = ?";
+        $query .= " AND game_number = ?";
         $params[] = $game_number_filter;
     }
     
     if ($score_min !== '') {
-        $where_conditions[] = "score >= ?";
+        $query .= " AND score >= ?";
         $params[] = $score_min;
     }
     
     if ($score_max !== '') {
-        $where_conditions[] = "score <= ?";
+        $query .= " AND score <= ?";
         $params[] = $score_max;
-    }
-    
-    if (!empty($where_conditions)) {
-        $query = "SELECT * FROM ($query) as games WHERE " . implode(" AND ", $where_conditions);
     }
     
     $query .= " ORDER BY event_date DESC, series_id, game_number";
@@ -142,9 +57,9 @@ try {
     $games = $stmt->fetchAll();
     
     // Get unique values for filters
-    $bowlers_stmt = $pdo->query("SELECT DISTINCT nickname FROM bowlers ORDER BY nickname")->fetchAll();
-    $locations_stmt = $pdo->query("SELECT DISTINCT name FROM locations WHERE name IS NOT NULL ORDER BY name")->fetchAll();
-    $series_types_stmt = $pdo->query("SELECT DISTINCT series_type FROM game_series ORDER BY series_type")->fetchAll();
+    $bowlers_stmt = $pdo->query("SELECT DISTINCT bowler_name FROM game_details ORDER BY bowler_name")->fetchAll();
+    $locations_stmt = $pdo->query("SELECT DISTINCT location_name FROM game_details WHERE location_name IS NOT NULL ORDER BY location_name")->fetchAll();
+    $series_types_stmt = $pdo->query("SELECT DISTINCT series_type FROM game_details ORDER BY series_type")->fetchAll();
     
     // Calculate statistics with the same filters
     $stats_query = "
@@ -156,32 +71,45 @@ try {
             COUNT(CASE WHEN score = 300 THEN 1 END) as perfect_games,
             COUNT(CASE WHEN score >= 250 THEN 1 END) as high_games,
             COUNT(CASE WHEN score >= 200 THEN 1 END) as good_games
-        FROM (
-            SELECT gs.game1_score as score FROM game_series gs JOIN bowlers b ON gs.bowler_id = b.bowler_id LEFT JOIN locations l ON gs.location_id = l.location_id WHERE gs.game1_score > 0
-            UNION ALL
-            SELECT gs.game2_score as score FROM game_series gs JOIN bowlers b ON gs.bowler_id = b.bowler_id LEFT JOIN locations l ON gs.location_id = l.location_id WHERE gs.game2_score > 0
-            UNION ALL
-            SELECT gs.game3_score as score FROM game_series gs JOIN bowlers b ON gs.bowler_id = b.bowler_id LEFT JOIN locations l ON gs.location_id = l.location_id WHERE gs.game3_score > 0
-        ) all_games
+        FROM game_details
+        WHERE 1=1
     ";
     
-    // Apply filters to statistics
-    if (!empty($where_conditions)) {
-        $stats_query = "
-            SELECT 
-                COUNT(*) as total_games,
-                AVG(score) as avg_score,
-                MAX(score) as highest_score,
-                MIN(score) as lowest_score,
-                COUNT(CASE WHEN score = 300 THEN 1 END) as perfect_games,
-                COUNT(CASE WHEN score >= 250 THEN 1 END) as high_games,
-                COUNT(CASE WHEN score >= 200 THEN 1 END) as good_games
-            FROM ($query) as filtered_games
-        ";
+    // Apply the same filters to statistics
+    $stats_params = [];
+    
+    if ($bowler_filter) {
+        $stats_query .= " AND bowler_name LIKE ?";
+        $stats_params[] = "%$bowler_filter%";
+    }
+    
+    if ($location_filter) {
+        $stats_query .= " AND location_name LIKE ?";
+        $stats_params[] = "%$location_filter%";
+    }
+    
+    if ($series_type_filter) {
+        $stats_query .= " AND series_type = ?";
+        $stats_params[] = $series_type_filter;
+    }
+    
+    if ($game_number_filter) {
+        $stats_query .= " AND game_number = ?";
+        $stats_params[] = $game_number_filter;
+    }
+    
+    if ($score_min !== '') {
+        $stats_query .= " AND score >= ?";
+        $stats_params[] = $score_min;
+    }
+    
+    if ($score_max !== '') {
+        $stats_query .= " AND score <= ?";
+        $stats_params[] = $score_max;
     }
     
     $stats_stmt = $pdo->prepare($stats_query);
-    $stats_stmt->execute($params);
+    $stats_stmt->execute($stats_params);
     $stats = $stats_stmt->fetch();
     
 } catch(PDOException $e) {
@@ -190,7 +118,7 @@ try {
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
-    <h2><i class="fas fa-gamepad me-2"></i>Game Details (Alternative)</h2>
+    <h2><i class="fas fa-gamepad me-2"></i>Game Details</h2>
     <div class="text-muted"><?php echo number_format($stats['total_games']); ?> games found</div>
 </div>
 
@@ -261,9 +189,9 @@ try {
                     <select name="bowler" id="bowler" class="form-select">
                         <option value="">All Bowlers</option>
                         <?php foreach ($bowlers_stmt as $bowler): ?>
-                            <option value="<?php echo htmlspecialchars($bowler['nickname']); ?>" 
-                                    <?php echo ($bowler_filter === $bowler['nickname']) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($bowler['nickname']); ?>
+                            <option value="<?php echo htmlspecialchars($bowler['bowler_name']); ?>" 
+                                    <?php echo ($bowler_filter === $bowler['bowler_name']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($bowler['bowler_name']); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -273,9 +201,9 @@ try {
                     <select name="location" id="location" class="form-select">
                         <option value="">All Locations</option>
                         <?php foreach ($locations_stmt as $location): ?>
-                            <option value="<?php echo htmlspecialchars($location['name']); ?>" 
-                                    <?php echo ($location_filter === $location['name']) ? 'selected' : ''; ?>>
-                                <?php echo htmlspecialchars($location['name']); ?>
+                            <option value="<?php echo htmlspecialchars($location['location_name']); ?>" 
+                                    <?php echo ($location_filter === $location['location_name']) ? 'selected' : ''; ?>>
+                                <?php echo htmlspecialchars($location['location_name']); ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
