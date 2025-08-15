@@ -1,5 +1,6 @@
 <?php
 require_once 'config.php';
+require_once 'auth.php';
 
 // Get current page
 $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
@@ -163,6 +164,9 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
                             break;
                         case 'admin':
                             include 'pages/admin.php';
+                            break;
+                        case 'login':
+                            include 'pages/login.php';
                             break;
                         default:
                             include 'pages/dashboard.php';
