@@ -62,14 +62,15 @@ try {
         } elseif ($game1_score < 0 || $game1_score > 300 || $game2_score < 0 || $game2_score > 300 || $game3_score < 0 || $game3_score > 300) {
             $error = "Game scores must be between 0 and 300";
         } else {
+            $stmt = $pdo->prepare("
+                INSERT INTO game_series (bowler_id, location_id, series_type, event_date, game1_score, game2_score, game3_score)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
+            $stmt->execute([$bowler_id, $location_id, $series_type, $event_date, $game1_score, $game2_score, $game3_score]);
+            
+            // Calculate totals for display message
             $total_score = $game1_score + $game2_score + $game3_score;
             $average_score = $total_score / 3;
-            
-            $stmt = $pdo->prepare("
-                INSERT INTO game_series (bowler_id, location_id, series_type, event_date, game1_score, game2_score, game3_score, total_score, average_score)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ");
-            $stmt->execute([$bowler_id, $location_id, $series_type, $event_date, $game1_score, $game2_score, $game3_score, $total_score, $average_score]);
             $message = "Game series added successfully! Total: $total_score, Average: " . number_format($average_score, 1);
         }
     }
