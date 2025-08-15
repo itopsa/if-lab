@@ -11,9 +11,6 @@ USE bowling_db;
 
 -- Insert Professional Bowling Locations
 INSERT INTO locations (name, city, state) VALUES
-('Lodi Lanes', 'Lodi', 'NJ'),
-('Parkway Lanes', 'Elmwood Park', 'NJ'),
-('Battle Bowl', 'Wayne', 'NJ'),
 ('Bowlmor Lanes', 'New York', 'NY'),
 ('AMF Bowling Center', 'Brooklyn', 'NY'),
 ('Strike Zone', 'Philadelphia', 'PA'),
