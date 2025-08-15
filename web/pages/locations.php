@@ -4,25 +4,45 @@ require_once 'config.php';
 try {
     $pdo = getDBConnection();
     
-    // Get location statistics using location_statistics view
+    // Get basic location information with optional statistics
     $locations_query = "
-        SELECT * FROM location_statistics
-        ORDER BY avg_series_score DESC
+        SELECT 
+            l.location_id,
+            l.name AS location_name,
+            l.city,
+            l.state,
+            COUNT(DISTINCT gs.bowler_id) AS unique_bowlers,
+            COUNT(gs.series_id) AS total_series,
+            AVG(gs.average_score) AS avg_series_score,
+            MAX(gs.total_score) AS highest_series,
+            MIN(gs.total_score) AS lowest_series,
+            COUNT(CASE WHEN gs.total_score >= 700 THEN 1 END) AS series_700_plus,
+            COUNT(CASE WHEN gs.total_score >= 800 THEN 1 END) AS series_800_plus
+        FROM locations l
+        LEFT JOIN game_series gs ON l.location_id = gs.location_id
+        GROUP BY l.location_id, l.name, l.city, l.state
+        ORDER BY total_series DESC, avg_series_score DESC
     ";
     $locations = $pdo->query($locations_query)->fetchAll();
     
     // Calculate overall statistics
     $stats_query = "
         SELECT 
-            COUNT(*) as total_locations,
-            AVG(avg_series_score) as overall_avg_score,
-            SUM(total_series) as total_series,
-            SUM(unique_bowlers) as total_bowlers,
-            SUM(series_800_plus) as total_800_plus,
-            SUM(series_700_plus) as total_700_plus
-        FROM location_statistics
+            COUNT(DISTINCT l.location_id) as total_locations,
+            AVG(gs.average_score) as overall_avg_score,
+            COUNT(gs.series_id) as total_series,
+            COUNT(DISTINCT gs.bowler_id) as total_bowlers,
+            COUNT(CASE WHEN gs.total_score >= 800 THEN 1 END) as total_800_plus,
+            COUNT(CASE WHEN gs.total_score >= 700 THEN 1 END) as total_700_plus
+        FROM locations l
+        LEFT JOIN game_series gs ON l.location_id = gs.location_id
     ";
     $stats = $pdo->query($stats_query)->fetch();
+    
+    // Debug: Check if there's any data
+    $debug_locations = $pdo->query("SELECT COUNT(*) as count FROM locations")->fetch();
+    $debug_series = $pdo->query("SELECT COUNT(*) as count FROM game_series")->fetch();
+    $debug_bowlers = $pdo->query("SELECT COUNT(*) as count FROM bowlers")->fetch();
     
 } catch(PDOException $e) {
     $error = "Error: " . $e->getMessage();
@@ -37,6 +57,13 @@ try {
 <?php if (isset($error)): ?>
     <div class="alert alert-danger"><?php echo $error; ?></div>
 <?php else: ?>
+    <!-- Debug Information -->
+    <div class="alert alert-info">
+        <strong>Debug Info:</strong> 
+        Locations: <?php echo $debug_locations['count']; ?> | 
+        Series: <?php echo $debug_series['count']; ?> | 
+        Bowlers: <?php echo $debug_bowlers['count']; ?>
+    </div>
     <!-- Statistics Cards -->
     <div class="row mb-4">
         <div class="col-md-2">
