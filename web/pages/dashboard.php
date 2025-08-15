@@ -20,22 +20,7 @@ try {
     ";
     $stats = $pdo->query($stats_query)->fetch();
     
-    // Get recent activity
-    $recent_query = "
-        SELECT 
-            b.nickname,
-            l.name as location,
-            gs.series_type,
-            gs.event_date,
-            gs.total_score,
-            gs.average_score
-        FROM game_series gs
-        JOIN bowlers b ON gs.bowler_id = b.bowler_id
-        LEFT JOIN locations l ON gs.location_id = l.location_id
-        ORDER BY gs.event_date DESC, gs.series_id DESC
-        LIMIT 10
-    ";
-    $recent_activity = $pdo->query($recent_query)->fetchAll();
+
     
     // Get top performers using bowler_performance_summary view
     $top_performers_query = "
@@ -194,59 +179,11 @@ try {
         </div>
     </div>
 
-    <!-- Recent Activity -->
-    <div class="row mt-4">
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">
-                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Recent Activity</h5>
-                </div>
-                <div class="card-body">
-                    <div class="table-responsive">
-                        <table class="table table-hover" id="recentTable">
-                            <thead>
-                                <tr>
-                                    <th>Date</th>
-                                    <th>Bowler</th>
-                                    <th>Location</th>
-                                    <th>Type</th>
-                                    <th>Total</th>
-                                    <th>Average</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($recent_activity as $activity): ?>
-                                    <tr>
-                                        <td><?php echo date('M j, Y', strtotime($activity['event_date'])); ?></td>
-                                        <td><strong><?php echo htmlspecialchars($activity['nickname']); ?></strong></td>
-                                        <td><?php echo htmlspecialchars($activity['location'] ?? 'N/A'); ?></td>
-                                        <td>
-                                            <span class="badge bg-<?php echo getSeriesTypeColor($activity['series_type']); ?>">
-                                                <?php echo htmlspecialchars($activity['series_type']); ?>
-                                            </span>
-                                        </td>
-                                        <td><strong><?php echo number_format($activity['total_score']); ?></strong></td>
-                                        <td><?php echo number_format($activity['average_score'], 1); ?></td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+
 <?php endif; ?>
 
 <script>
 $(document).ready(function() {
-    $('#recentTable').DataTable({
-        pageLength: 10,
-        order: [[0, 'desc']],
-        searching: false,
-        lengthChange: false
-    });
-    
     // Series Type Chart
     const ctx = document.getElementById('seriesTypeChart').getContext('2d');
     new Chart(ctx, {
