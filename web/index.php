@@ -110,7 +110,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
                 <div class="p-4">
                     <h4 class="text-white mb-4">
                         <i class="fas fa-bowling-ball me-2"></i>
-                        Bowling DB
+                        IF Bowling Club
                     </h4>
                     <nav class="nav flex-column">
                         <a class="nav-link <?php echo $page == 'dashboard' ? 'active' : ''; ?>" href="?page=dashboard">
