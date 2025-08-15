@@ -4,42 +4,42 @@ require_once 'config.php';
 try {
     $pdo = getDBConnection();
     
+    // Debug: Check if view exists and has data
+    $debug_query = "SELECT COUNT(*) as count FROM bowler_performance_summary";
+    $debug_result = $pdo->query($debug_query)->fetch();
+    error_log("Debug: bowler_performance_summary has " . $debug_result['count'] . " records");
+    
     // Get filter parameters
     $search = isset($_GET['search']) ? $_GET['search'] : '';
     $dexterity = isset($_GET['dexterity']) ? $_GET['dexterity'] : '';
     $style = isset($_GET['style']) ? $_GET['style'] : '';
-    $min_avg = isset($_GET['min_avg']) ? (float)$_GET['min_avg'] : '';
-    $max_avg = isset($_GET['max_avg']) ? (float)$_GET['max_avg'] : '';
+    $min_avg = isset($_GET['min_avg']) && $_GET['min_avg'] !== '' ? (float)$_GET['min_avg'] : '';
+    $max_avg = isset($_GET['max_avg']) && $_GET['max_avg'] !== '' ? (float)$_GET['max_avg'] : '';
     
     // Build the query with filters using bowler_performance_summary view
     $query = "
         SELECT 
-            bps.*,
-            b.dexterity,
-            b.style,
-            b.uba_id,
-            b.usbc_id
+            bps.*
         FROM bowler_performance_summary bps
-        JOIN bowlers b ON bps.bowler_id = b.bowler_id
         WHERE 1=1
     ";
     
     $params = [];
     
     if ($search) {
-        $query .= " AND (bps.nickname LIKE ? OR b.uba_id LIKE ? OR b.usbc_id LIKE ?)";
+        $query .= " AND (bps.nickname LIKE ? OR bps.uba_id LIKE ? OR bps.usbc_id LIKE ?)";
         $params[] = "%$search%";
         $params[] = "%$search%";
         $params[] = "%$search%";
     }
     
     if ($dexterity) {
-        $query .= " AND b.dexterity = ?";
+        $query .= " AND bps.dexterity = ?";
         $params[] = $dexterity;
     }
     
     if ($style) {
-        $query .= " AND b.style = ?";
+        $query .= " AND bps.style = ?";
         $params[] = $style;
     }
     
@@ -55,9 +55,23 @@ try {
     
     $query .= " ORDER BY bps.overall_average DESC";
     
+    // Debug: Log the query and parameters
+    error_log("Debug: Query: " . $query);
+    error_log("Debug: Parameters: " . print_r($params, true));
+    
     $stmt = $pdo->prepare($query);
     $stmt->execute($params);
     $bowlers = $stmt->fetchAll();
+    
+    error_log("Debug: Found " . count($bowlers) . " bowlers");
+    
+    // Fallback: If no results, try a simple query without filters
+    if (count($bowlers) == 0) {
+        error_log("Debug: No results found, trying simple query");
+        $simple_query = "SELECT * FROM bowler_performance_summary LIMIT 5";
+        $simple_result = $pdo->query($simple_query)->fetchAll();
+        error_log("Debug: Simple query found " . count($simple_result) . " records");
+    }
     
     // Get unique values for filters
     $dexterity_options = $pdo->query("SELECT DISTINCT dexterity FROM bowlers WHERE dexterity IS NOT NULL ORDER BY dexterity")->fetchAll();
@@ -73,21 +87,20 @@ try {
             SUM(series_800_plus) as total_800_plus,
             SUM(series_700_plus) as total_700_plus
         FROM bowler_performance_summary bps
-        JOIN bowlers b ON bps.bowler_id = b.bowler_id
         WHERE 1=1
     ";
     
     // Apply the same filters to statistics
     if ($search) {
-        $stats_query .= " AND (bps.nickname LIKE ? OR b.uba_id LIKE ? OR b.usbc_id LIKE ?)";
+        $stats_query .= " AND (bps.nickname LIKE ? OR bps.uba_id LIKE ? OR bps.usbc_id LIKE ?)";
     }
     
     if ($dexterity) {
-        $stats_query .= " AND b.dexterity = ?";
+        $stats_query .= " AND bps.dexterity = ?";
     }
     
     if ($style) {
-        $stats_query .= " AND b.style = ?";
+        $stats_query .= " AND bps.style = ?";
     }
     
     if ($min_avg !== '') {
@@ -207,12 +220,12 @@ try {
                 <div class="col-md-2">
                     <label for="min_avg" class="form-label">Min Average</label>
                     <input type="number" name="min_avg" id="min_avg" class="form-control" 
-                           step="0.1" min="0" max="300" value="<?php echo htmlspecialchars($min_avg); ?>">
+                           step="0.1" min="0" max="300" value="<?php echo $min_avg !== '' ? htmlspecialchars($min_avg) : ''; ?>">
                 </div>
                 <div class="col-md-2">
                     <label for="max_avg" class="form-label">Max Average</label>
                     <input type="number" name="max_avg" id="max_avg" class="form-control" 
-                           step="0.1" min="0" max="300" value="<?php echo htmlspecialchars($max_avg); ?>">
+                           step="0.1" min="0" max="300" value="<?php echo $max_avg !== '' ? htmlspecialchars($max_avg) : ''; ?>">
                 </div>
                 <div class="col-md-1 d-flex align-items-end">
                     <button type="submit" class="btn btn-primary me-2">Filter</button>
