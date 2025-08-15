@@ -1,12 +1,12 @@
 <?php
 require_once 'config.php';
-require_once '../auth.php';
+// require_once '../auth.php'; // Authentication disabled for now
 
 // Check if user is logged in
-if (!isLoggedIn()) {
-    header('Location: ?page=login');
-    exit;
-}
+// if (!isLoggedIn()) {
+//     header('Location: ?page=login');
+//     exit;
+// }
 
 try {
     $pdo = getDBConnection();
@@ -264,12 +264,15 @@ try {
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="fas fa-cog me-2"></i>Admin Panel</h2>
+    <div class="text-muted">Data Management</div>
+    <!-- Authentication UI disabled for now
     <div class="d-flex align-items-center">
         <div class="text-muted me-3">Welcome, <?php echo htmlspecialchars($_SESSION['admin_username']); ?></div>
         <a href="?page=admin&logout=1" class="btn btn-outline-danger btn-sm">
             <i class="fas fa-sign-out-alt me-1"></i>Logout
         </a>
     </div>
+    -->
 </div>
 
 <?php if ($message): ?>
