@@ -1,196 +1,289 @@
 <?php
-// Get dashboard statistics
-$stats = [];
+require_once 'config.php';
 
-// Total bowlers
-$stmt = $pdo->query("SELECT COUNT(*) as count FROM bowlers");
-$stats['total_bowlers'] = $stmt->fetch()['count'];
-
-// Total locations
-$stmt = $pdo->query("SELECT COUNT(*) as count FROM locations");
-$stats['total_locations'] = $stmt->fetch()['count'];
-
-// Total series
-$stmt = $pdo->query("SELECT COUNT(*) as count FROM game_series");
-$stats['total_series'] = $stmt->fetch()['count'];
-
-// Average series score
-$stmt = $pdo->query("SELECT AVG(average_score) as avg FROM game_series");
-$stats['avg_series_score'] = round($stmt->fetch()['avg'], 2);
-
-// Recent series (last 5)
-$stmt = $pdo->query("
-    SELECT b.nickname, l.name as location, gs.total_score, gs.average_score, gs.event_date
-    FROM game_series gs
-    JOIN bowlers b ON gs.bowler_id = b.bowler_id
-    LEFT JOIN locations l ON gs.location_id = l.location_id
-    ORDER BY gs.event_date DESC
-    LIMIT 5
-");
-$recent_series = $stmt->fetchAll();
-
-// Top performers
-$stmt = $pdo->query("
-    SELECT nickname, overall_average, total_series
-    FROM bowler_performance_summary
-    ORDER BY overall_average DESC
-    LIMIT 5
-");
-$top_performers = $stmt->fetchAll();
+try {
+    $pdo = getDBConnection();
+    
+    // Get overall statistics
+    $stats_query = "
+        SELECT 
+            COUNT(DISTINCT b.bowler_id) as total_bowlers,
+            COUNT(DISTINCT l.location_id) as total_locations,
+            COUNT(gs.series_id) as total_series,
+            AVG(gs.average_score) as overall_average,
+            MAX(gs.total_score) as highest_series,
+            COUNT(CASE WHEN gs.total_score >= 800 THEN 1 END) as series_800_plus,
+            COUNT(CASE WHEN gs.total_score >= 700 THEN 1 END) as series_700_plus
+        FROM bowlers b
+        LEFT JOIN game_series gs ON b.bowler_id = gs.bowler_id
+        LEFT JOIN locations l ON gs.location_id = l.location_id
+    ";
+    $stats = $pdo->query($stats_query)->fetch();
+    
+    // Get recent activity
+    $recent_query = "
+        SELECT 
+            b.nickname,
+            l.name as location,
+            gs.series_type,
+            gs.event_date,
+            gs.total_score,
+            gs.average_score
+        FROM game_series gs
+        JOIN bowlers b ON gs.bowler_id = b.bowler_id
+        LEFT JOIN locations l ON gs.location_id = l.location_id
+        ORDER BY gs.event_date DESC, gs.series_id DESC
+        LIMIT 10
+    ";
+    $recent_activity = $pdo->query($recent_query)->fetchAll();
+    
+    // Get top performers
+    $top_performers_query = "
+        SELECT 
+            nickname,
+            total_series,
+            overall_average,
+            highest_series,
+            series_800_plus
+        FROM bowler_performance_summary
+        ORDER BY overall_average DESC
+        LIMIT 5
+    ";
+    $top_performers = $pdo->query($top_performers_query)->fetchAll();
+    
+    // Get series type distribution
+    $series_types_query = "
+        SELECT 
+            series_type,
+            COUNT(*) as count
+        FROM game_series
+        GROUP BY series_type
+        ORDER BY count DESC
+    ";
+    $series_types = $pdo->query($series_types_query)->fetchAll();
+    
+} catch(PDOException $e) {
+    $error = "Error: " . $e->getMessage();
+}
 ?>
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h2>
-    <div class="text-muted">Last updated: <?php echo date('M j, Y g:i A'); ?></div>
+    <div class="text-muted">Bowling Database Overview</div>
 </div>
 
-<!-- Statistics Cards -->
-<div class="row mb-4">
-    <div class="col-md-3">
-        <div class="card stats-card">
-            <div class="card-body text-center">
-                <i class="fas fa-users fa-2x mb-2"></i>
-                <h3><?php echo $stats['total_bowlers']; ?></h3>
-                <p class="mb-0">Total Bowlers</p>
+<?php if (isset($error)): ?>
+    <div class="alert alert-danger"><?php echo $error; ?></div>
+<?php else: ?>
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <i class="fas fa-users fa-2x mb-2"></i>
+                    <h3><?php echo number_format($stats['total_bowlers']); ?></h3>
+                    <p class="mb-0">Total Bowlers</p>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stats-card">
-            <div class="card-body text-center">
-                <i class="fas fa-map-marker-alt fa-2x mb-2"></i>
-                <h3><?php echo $stats['total_locations']; ?></h3>
-                <p class="mb-0">Locations</p>
+        <div class="col-md-3">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <i class="fas fa-map-marker-alt fa-2x mb-2"></i>
+                    <h3><?php echo number_format($stats['total_locations']); ?></h3>
+                    <p class="mb-0">Locations</p>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stats-card">
-            <div class="card-body text-center">
-                <i class="fas fa-list fa-2x mb-2"></i>
-                <h3><?php echo $stats['total_series']; ?></h3>
-                <p class="mb-0">Total Series</p>
+        <div class="col-md-3">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <i class="fas fa-list fa-2x mb-2"></i>
+                    <h3><?php echo number_format($stats['total_series']); ?></h3>
+                    <p class="mb-0">Total Series</p>
+                </div>
             </div>
         </div>
-    </div>
-    <div class="col-md-3">
-        <div class="card stats-card">
-            <div class="card-body text-center">
-                <i class="fas fa-chart-line fa-2x mb-2"></i>
-                <h3><?php echo $stats['avg_series_score']; ?></h3>
-                <p class="mb-0">Avg Series Score</p>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div class="row">
-    <!-- Recent Series -->
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Recent Series</h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Bowler</th>
-                                <th>Location</th>
-                                <th>Score</th>
-                                <th>Date</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach($recent_series as $series): ?>
-                            <tr>
-                                <td><?php echo htmlspecialchars($series['nickname']); ?></td>
-                                <td><?php echo htmlspecialchars($series['location'] ?? 'N/A'); ?></td>
-                                <td>
-                                    <span class="badge bg-primary"><?php echo $series['total_score']; ?></span>
-                                    <small class="text-muted">(<?php echo $series['average_score']; ?> avg)</small>
-                                </td>
-                                <td><?php echo date('M j', strtotime($series['event_date'])); ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+        <div class="col-md-3">
+            <div class="card stats-card text-center">
+                <div class="card-body">
+                    <i class="fas fa-chart-line fa-2x mb-2"></i>
+                    <h3><?php echo number_format($stats['overall_average'], 1); ?></h3>
+                    <p class="mb-0">Overall Average</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Top Performers -->
-    <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Top Performers</h5>
+    <!-- Performance Highlights -->
+    <div class="row mb-4">
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-primary">Highest Series</h5>
+                    <h2 class="text-success"><?php echo number_format($stats['highest_series']); ?></h2>
+                    <p class="text-muted">Best Series Score</p>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>Bowler</th>
-                                <th>Average</th>
-                                <th>Series</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach($top_performers as $index => $bowler): ?>
-                            <tr>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <span class="badge bg-warning me-2">#<?php echo $index + 1; ?></span>
-                                        <?php echo htmlspecialchars($bowler['nickname']); ?>
-                                    </div>
-                                </td>
-                                <td>
-                                    <span class="badge bg-success"><?php echo $bowler['overall_average']; ?></span>
-                                </td>
-                                <td><?php echo $bowler['total_series']; ?></td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                    </table>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-warning">800+ Series</h5>
+                    <h2 class="text-warning"><?php echo number_format($stats['series_800_plus']); ?></h2>
+                    <p class="text-muted">Elite Performances</p>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card text-center">
+                <div class="card-body">
+                    <h5 class="card-title text-info">700+ Series</h5>
+                    <h2 class="text-info"><?php echo number_format($stats['series_700_plus']); ?></h2>
+                    <p class="text-muted">Excellent Performances</p>
                 </div>
             </div>
         </div>
     </div>
-</div>
 
-<!-- Quick Actions -->
-<div class="row mt-4">
-    <div class="col-12">
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-bolt me-2"></i>Quick Actions</h5>
+    <!-- Charts and Data -->
+    <div class="row">
+        <!-- Top Performers -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-trophy me-2"></i>Top Performers</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm">
+                            <thead>
+                                <tr>
+                                    <th>Bowler</th>
+                                    <th>Series</th>
+                                    <th>Average</th>
+                                    <th>Best</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($top_performers as $bowler): ?>
+                                    <tr>
+                                        <td><strong><?php echo htmlspecialchars($bowler['nickname']); ?></strong></td>
+                                        <td><?php echo number_format($bowler['total_series']); ?></td>
+                                        <td><span class="badge bg-success"><?php echo number_format($bowler['overall_average'], 1); ?></span></td>
+                                        <td><?php echo number_format($bowler['highest_series']); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
-            <div class="card-body">
-                <div class="row">
-                    <div class="col-md-3">
-                        <a href="?page=bowlers" class="btn btn-outline-primary w-100 mb-2">
-                            <i class="fas fa-users me-2"></i>View All Bowlers
-                        </a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="?page=series" class="btn btn-outline-success w-100 mb-2">
-                            <i class="fas fa-list me-2"></i>Series Details
-                        </a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="?page=recent" class="btn btn-outline-info w-100 mb-2">
-                            <i class="fas fa-clock me-2"></i>Recent Performance
-                        </a>
-                    </div>
-                    <div class="col-md-3">
-                        <a href="?page=tournaments" class="btn btn-outline-warning w-100 mb-2">
-                            <i class="fas fa-trophy me-2"></i>Tournament Stats
-                        </a>
+        </div>
+
+        <!-- Series Type Distribution -->
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-chart-pie me-2"></i>Series Distribution</h5>
+                </div>
+                <div class="card-body">
+                    <canvas id="seriesTypeChart" height="200"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="row mt-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-clock me-2"></i>Recent Activity</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover" id="recentTable">
+                            <thead>
+                                <tr>
+                                    <th>Date</th>
+                                    <th>Bowler</th>
+                                    <th>Location</th>
+                                    <th>Type</th>
+                                    <th>Total</th>
+                                    <th>Average</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($recent_activity as $activity): ?>
+                                    <tr>
+                                        <td><?php echo date('M j, Y', strtotime($activity['event_date'])); ?></td>
+                                        <td><strong><?php echo htmlspecialchars($activity['nickname']); ?></strong></td>
+                                        <td><?php echo htmlspecialchars($activity['location'] ?? 'N/A'); ?></td>
+                                        <td>
+                                            <span class="badge bg-<?php echo getSeriesTypeColor($activity['series_type']); ?>">
+                                                <?php echo htmlspecialchars($activity['series_type']); ?>
+                                            </span>
+                                        </td>
+                                        <td><strong><?php echo number_format($activity['total_score']); ?></strong></td>
+                                        <td><?php echo number_format($activity['average_score'], 1); ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-</div>
+<?php endif; ?>
+
+<script>
+$(document).ready(function() {
+    $('#recentTable').DataTable({
+        pageLength: 10,
+        order: [[0, 'desc']],
+        searching: false,
+        lengthChange: false
+    });
+    
+    // Series Type Chart
+    const ctx = document.getElementById('seriesTypeChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: <?php echo json_encode(array_column($series_types, 'series_type')); ?>,
+            datasets: [{
+                data: <?php echo json_encode(array_column($series_types, 'count')); ?>,
+                backgroundColor: [
+                    '#667eea',
+                    '#764ba2',
+                    '#f093fb',
+                    '#4facfe',
+                    '#00f2fe'
+                ]
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+});
+</script>
+
+<?php
+function getSeriesTypeColor($type) {
+    switch($type) {
+        case 'Tour Stop': return 'primary';
+        case 'Playoffs': return 'danger';
+        case 'House History': return 'success';
+        default: return 'secondary';
+    }
+}
+?>
