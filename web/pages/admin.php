@@ -111,6 +111,137 @@ try {
         $selected_bowler = $stmt->fetch();
     }
     
+    // Handle CSV Upload
+    if (isset($_POST['upload_csv'])) {
+        $csv_type = $_POST['csv_type'];
+        $upload_message = '';
+        $upload_error = '';
+        
+        if (isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] == 0) {
+            $file = $_FILES['csv_file'];
+            $filename = $file['name'];
+            $filetype = pathinfo($filename, PATHINFO_EXTENSION);
+            
+            if ($filetype == 'csv') {
+                $handle = fopen($file['tmp_name'], 'r');
+                if ($handle) {
+                    $row = 1;
+                    $success_count = 0;
+                    $error_count = 0;
+                    
+                    // Skip header row
+                    $headers = fgetcsv($handle);
+                    
+                    while (($data = fgetcsv($handle)) !== false) {
+                        $row++;
+                        try {
+                            switch ($csv_type) {
+                                case 'bowlers':
+                                    if (count($data) >= 1) { // At least nickname required
+                                        $nickname = trim($data[0]);
+                                        $dexterity = isset($data[1]) ? trim($data[1]) : '';
+                                        $style = isset($data[2]) ? trim($data[2]) : '';
+                                        $uba_id = isset($data[3]) ? trim($data[3]) : '';
+                                        $usbc_id = isset($data[4]) ? trim($data[4]) : '';
+                                        $home_house = isset($data[5]) ? trim($data[5]) : '';
+                                        
+                                        // Get home_house_id if location name provided
+                                        $home_house_id = null;
+                                        if (!empty($home_house)) {
+                                            $stmt = $pdo->prepare("SELECT location_id FROM locations WHERE name = ?");
+                                            $stmt->execute([$home_house]);
+                                            $result = $stmt->fetch();
+                                            $home_house_id = $result ? $result['location_id'] : null;
+                                        }
+                                        
+                                        $stmt = $pdo->prepare("
+                                            INSERT INTO bowlers (nickname, dexterity, style, uba_id, usbc_id, home_house_id)
+                                            VALUES (?, ?, ?, ?, ?, ?)
+                                        ");
+                                        $stmt->execute([$nickname, $dexterity, $style, $uba_id, $usbc_id, $home_house_id]);
+                                        $success_count++;
+                                    }
+                                    break;
+                                    
+                                case 'locations':
+                                    if (count($data) >= 1) { // At least name required
+                                        $name = trim($data[0]);
+                                        $city = isset($data[1]) ? trim($data[1]) : '';
+                                        $state = isset($data[2]) ? trim($data[2]) : '';
+                                        
+                                        $stmt = $pdo->prepare("
+                                            INSERT INTO locations (name, city, state)
+                                            VALUES (?, ?, ?)
+                                        ");
+                                        $stmt->execute([$name, $city, $state]);
+                                        $success_count++;
+                                    }
+                                    break;
+                                    
+                                case 'game_series':
+                                    if (count($data) >= 4) { // bowler, location, date, game1 required
+                                        $bowler_nickname = trim($data[0]);
+                                        $location_name = isset($data[1]) ? trim($data[1]) : '';
+                                        $event_date = trim($data[2]);
+                                        $game1_score = (int)$data[3];
+                                        $game2_score = isset($data[4]) ? (int)$data[4] : 0;
+                                        $game3_score = isset($data[5]) ? (int)$data[5] : 0;
+                                        $series_type = isset($data[6]) ? trim($data[6]) : 'League';
+                                        
+                                        // Get bowler_id
+                                        $stmt = $pdo->prepare("SELECT bowler_id FROM bowlers WHERE nickname = ?");
+                                        $stmt->execute([$bowler_nickname]);
+                                        $bowler_result = $stmt->fetch();
+                                        
+                                        if ($bowler_result) {
+                                            $bowler_id = $bowler_result['bowler_id'];
+                                            
+                                            // Get location_id if location name provided
+                                            $location_id = null;
+                                            if (!empty($location_name)) {
+                                                $stmt = $pdo->prepare("SELECT location_id FROM locations WHERE name = ?");
+                                                $stmt->execute([$location_name]);
+                                                $location_result = $stmt->fetch();
+                                                $location_id = $location_result ? $location_result['location_id'] : null;
+                                            }
+                                            
+                                            $stmt = $pdo->prepare("
+                                                INSERT INTO game_series (bowler_id, location_id, series_type, event_date, game1_score, game2_score, game3_score)
+                                                VALUES (?, ?, ?, ?, ?, ?, ?)
+                                            ");
+                                            $stmt->execute([$bowler_id, $location_id, $series_type, $event_date, $game1_score, $game2_score, $game3_score]);
+                                            $success_count++;
+                                        } else {
+                                            $error_count++;
+                                        }
+                                    }
+                                    break;
+                            }
+                        } catch (Exception $e) {
+                            $error_count++;
+                        }
+                    }
+                    fclose($handle);
+                    
+                    if ($success_count > 0) {
+                        $upload_message = "Successfully imported $success_count records from CSV.";
+                        if ($error_count > 0) {
+                            $upload_message .= " $error_count records had errors.";
+                        }
+                    } else {
+                        $upload_error = "No records were imported. Please check your CSV format.";
+                    }
+                } else {
+                    $upload_error = "Could not read the CSV file.";
+                }
+            } else {
+                $upload_error = "Please upload a valid CSV file.";
+            }
+        } else {
+            $upload_error = "Please select a file to upload.";
+        }
+    }
+    
 } catch(PDOException $e) {
     $error = "Database Error: " . $e->getMessage();
 }
@@ -131,6 +262,20 @@ try {
 <?php if ($error): ?>
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
         <i class="fas fa-exclamation-circle me-2"></i><?php echo htmlspecialchars($error); ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+
+<?php if (isset($upload_message) && $upload_message): ?>
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <i class="fas fa-check-circle me-2"></i><?php echo htmlspecialchars($upload_message); ?>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+
+<?php if (isset($upload_error) && $upload_error): ?>
+    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+        <i class="fas fa-exclamation-circle me-2"></i><?php echo htmlspecialchars($upload_error); ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     </div>
 <?php endif; ?>
@@ -450,6 +595,100 @@ try {
                             ?>
                             <h4 class="text-info"><?php echo number_format($recent_series); ?></h4>
                             <p class="text-muted mb-0">Last 30 Days</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- CSV Upload Section -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-file-csv me-2"></i>CSV Import</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <h6>Bulk Import Options</h6>
+                        <p class="text-muted small">Upload CSV files to import multiple records at once.</p>
+                    </div>
+                    <div class="col-md-8">
+                        <form method="POST" enctype="multipart/form-data">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label for="csv_type" class="form-label">Import Type</label>
+                                    <select name="csv_type" id="csv_type" class="form-select" required>
+                                        <option value="">Select type...</option>
+                                        <option value="bowlers">Bowlers</option>
+                                        <option value="locations">Locations</option>
+                                        <option value="game_series">Game Series</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-6">
+                                    <label for="csv_file" class="form-label">CSV File</label>
+                                    <input type="file" name="csv_file" id="csv_file" class="form-control" accept=".csv" required>
+                                </div>
+                                <div class="col-md-2 d-flex align-items-end">
+                                    <button type="submit" name="upload_csv" class="btn btn-primary w-100">
+                                        <i class="fas fa-upload me-2"></i>Import
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+                
+                <!-- CSV Format Instructions -->
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <h6>CSV Format Instructions</h6>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="card border-info">
+                                    <div class="card-header bg-info text-white">
+                                        <strong>Bowlers CSV</strong>
+                                    </div>
+                                    <div class="card-body">
+                                        <small class="text-muted">
+                                            <strong>Headers:</strong> nickname,dexterity,style,uba_id,usbc_id,home_house<br>
+                                            <strong>Example:</strong><br>
+                                            John Doe,Right,1 Handed,12345,67890,Lodi Lanes
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-success">
+                                    <div class="card-header bg-success text-white">
+                                        <strong>Locations CSV</strong>
+                                    </div>
+                                    <div class="card-body">
+                                        <small class="text-muted">
+                                            <strong>Headers:</strong> name,city,state<br>
+                                            <strong>Example:</strong><br>
+                                            Lodi Lanes,Lodi,NJ
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="card border-warning">
+                                    <div class="card-header bg-warning text-white">
+                                        <strong>Game Series CSV</strong>
+                                    </div>
+                                    <div class="card-body">
+                                        <small class="text-muted">
+                                            <strong>Headers:</strong> bowler_nickname,location_name,event_date,game1_score,game2_score,game3_score,series_type<br>
+                                            <strong>Example:</strong><br>
+                                            John Doe,Lodi Lanes,2024-01-15,200,220,180,League
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
