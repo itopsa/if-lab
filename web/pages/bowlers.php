@@ -63,7 +63,7 @@ try {
     $dexterity_options = $pdo->query("SELECT DISTINCT dexterity FROM bowlers WHERE dexterity IS NOT NULL ORDER BY dexterity")->fetchAll();
     $style_options = $pdo->query("SELECT DISTINCT style FROM bowlers WHERE style IS NOT NULL ORDER BY style")->fetchAll();
     
-    // Calculate overall statistics using bowler_performance_summary view
+    // Calculate statistics with the same filters as the main query
     $stats_query = "
         SELECT 
             COUNT(*) as total_bowlers,
@@ -72,9 +72,35 @@ try {
             SUM(total_series) as total_series,
             SUM(series_800_plus) as total_800_plus,
             SUM(series_700_plus) as total_700_plus
-        FROM bowler_performance_summary
+        FROM bowler_performance_summary bps
+        JOIN bowlers b ON bps.bowler_id = b.bowler_id
+        WHERE 1=1
     ";
-    $stats = $pdo->query($stats_query)->fetch();
+    
+    // Apply the same filters to statistics
+    if ($search) {
+        $stats_query .= " AND (bps.nickname LIKE ? OR b.uba_id LIKE ? OR b.usbc_id LIKE ?)";
+    }
+    
+    if ($dexterity) {
+        $stats_query .= " AND b.dexterity = ?";
+    }
+    
+    if ($style) {
+        $stats_query .= " AND b.style = ?";
+    }
+    
+    if ($min_avg !== '') {
+        $stats_query .= " AND bps.overall_average >= ?";
+    }
+    
+    if ($max_avg !== '') {
+        $stats_query .= " AND bps.overall_average <= ?";
+    }
+    
+    $stats_stmt = $pdo->prepare($stats_query);
+    $stats_stmt->execute($params);
+    $stats = $stats_stmt->fetch();
     
 } catch(PDOException $e) {
     $error = "Error: " . $e->getMessage();
