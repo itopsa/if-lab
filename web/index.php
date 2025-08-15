@@ -167,6 +167,7 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
                             break;
                         case 'login':
                             include 'pages/login.php';
+                            exit; // Exit to prevent main layout from loading
                             break;
                         default:
                             include 'pages/dashboard.php';
