@@ -131,6 +131,9 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
                         <a class="nav-link <?php echo $page == 'tournaments' ? 'active' : ''; ?>" href="?page=tournaments">
                             <i class="fas fa-trophy me-2"></i>Tournaments
                         </a>
+                        <a class="nav-link <?php echo $page == 'admin' ? 'active' : ''; ?>" href="?page=admin">
+                            <i class="fas fa-cog me-2"></i>Admin
+                        </a>
                     </nav>
                 </div>
             </div>
@@ -157,6 +160,9 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
                             break;
                         case 'tournaments':
                             include 'pages/tournaments.php';
+                            break;
+                        case 'admin':
+                            include 'pages/admin.php';
                             break;
                         default:
                             include 'pages/dashboard.php';

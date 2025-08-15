@@ -4,10 +4,7 @@ require_once 'config.php';
 try {
     $pdo = getDBConnection();
     
-    // Debug: Check if view exists and has data
-    $debug_query = "SELECT COUNT(*) as count FROM bowler_performance_summary";
-    $debug_result = $pdo->query($debug_query)->fetch();
-    error_log("Debug: bowler_performance_summary has " . $debug_result['count'] . " records");
+
     
     // Get filter parameters
     $search = isset($_GET['search']) ? $_GET['search'] : '';
@@ -55,23 +52,9 @@ try {
     
     $query .= " ORDER BY bps.overall_average DESC";
     
-    // Debug: Log the query and parameters
-    error_log("Debug: Query: " . $query);
-    error_log("Debug: Parameters: " . print_r($params, true));
-    
     $stmt = $pdo->prepare($query);
     $stmt->execute($params);
     $bowlers = $stmt->fetchAll();
-    
-    error_log("Debug: Found " . count($bowlers) . " bowlers");
-    
-    // Fallback: If no results, try a simple query without filters
-    if (count($bowlers) == 0) {
-        error_log("Debug: No results found, trying simple query");
-        $simple_query = "SELECT * FROM bowler_performance_summary LIMIT 5";
-        $simple_result = $pdo->query($simple_query)->fetchAll();
-        error_log("Debug: Simple query found " . count($simple_result) . " records");
-    }
     
     // Get unique values for filters
     $dexterity_options = $pdo->query("SELECT DISTINCT dexterity FROM bowlers WHERE dexterity IS NOT NULL ORDER BY dexterity")->fetchAll();
