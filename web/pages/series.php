@@ -152,7 +152,8 @@ try {
             <h5 class="mb-0"><i class="fas fa-filter me-2"></i>Filters</h5>
         </div>
         <div class="card-body">
-            <form method="GET" action="?page=series" class="row g-3">
+            <form method="GET" action="" class="row g-3">
+                <input type="hidden" name="page" value="series">
                 <div class="col-md-2">
                     <label for="bowler" class="form-label">Bowler</label>
                     <select name="bowler" id="bowler" class="form-select">
