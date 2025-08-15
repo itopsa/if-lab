@@ -128,9 +128,6 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
                         <a class="nav-link <?php echo $page == 'recent' ? 'active' : ''; ?>" href="?page=recent">
                             <i class="fas fa-clock me-2"></i>Recent Performance
                         </a>
-                        <a class="nav-link <?php echo $page == 'games' ? 'active' : ''; ?>" href="?page=games">
-                            <i class="fas fa-gamepad me-2"></i>Game Details
-                        </a>
                         <a class="nav-link <?php echo $page == 'tournaments' ? 'active' : ''; ?>" href="?page=tournaments">
                             <i class="fas fa-trophy me-2"></i>Tournaments
                         </a>
@@ -157,9 +154,6 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
                             break;
                         case 'recent':
                             include 'pages/recent.php';
-                            break;
-                        case 'games':
-                            include 'pages/games.php';
                             break;
                         case 'tournaments':
                             include 'pages/tournaments.php';
