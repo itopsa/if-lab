@@ -116,6 +116,7 @@ try {
         $csv_type = $_POST['csv_type'];
         $upload_message = '';
         $upload_error = '';
+        $debug_info = [];
         
         if (isset($_FILES['csv_file']) && $_FILES['csv_file']['error'] == 0) {
             $file = $_FILES['csv_file'];
@@ -134,6 +135,7 @@ try {
                     
                     while (($data = fgetcsv($handle)) !== false) {
                         $row++;
+                        $row_debug = "Row $row: " . implode(',', $data);
                         try {
                             switch ($csv_type) {
                                 case 'bowlers':
@@ -160,6 +162,7 @@ try {
                                         ");
                                         $stmt->execute([$nickname, $dexterity, $style, $uba_id, $usbc_id, $home_house_id]);
                                         $success_count++;
+                                        $debug_info[] = "✓ $row_debug - Bowler added successfully";
                                     }
                                     break;
                                     
@@ -175,6 +178,7 @@ try {
                                         ");
                                         $stmt->execute([$name, $city, $state]);
                                         $success_count++;
+                                        $debug_info[] = "✓ $row_debug - Location added successfully";
                                     }
                                     break;
                                     
@@ -211,14 +215,18 @@ try {
                                             ");
                                             $stmt->execute([$bowler_id, $location_id, $series_type, $event_date, $game1_score, $game2_score, $game3_score]);
                                             $success_count++;
+                                            $debug_info[] = "✓ $row_debug - Game series added successfully (Bowler ID: $bowler_id, Location ID: " . ($location_id ?? 'NULL') . ")";
                                         } else {
                                             $error_count++;
+                                            $debug_info[] = "✗ $row_debug - Bowler '$bowler_nickname' not found";
                                         }
                                     }
                                     break;
                             }
                         } catch (Exception $e) {
                             $error_count++;
+                            $debug_info[] = "✗ $row_debug - SQL Error: " . $e->getMessage();
+                            error_log("CSV Import Error Row $row: " . $e->getMessage());
                         }
                     }
                     fclose($handle);
@@ -277,6 +285,25 @@ try {
     <div class="alert alert-danger alert-dismissible fade show" role="alert">
         <i class="fas fa-exclamation-circle me-2"></i><?php echo htmlspecialchars($upload_error); ?>
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    </div>
+<?php endif; ?>
+
+<?php if (isset($debug_info) && !empty($debug_info)): ?>
+    <div class="card mb-4">
+        <div class="card-header">
+            <h6 class="mb-0"><i class="fas fa-bug me-2"></i>CSV Import Debug Information</h6>
+        </div>
+        <div class="card-body">
+            <div style="max-height: 300px; overflow-y: auto;">
+                <?php foreach ($debug_info as $info): ?>
+                    <div class="mb-1">
+                        <small class="<?php echo strpos($info, '✓') === 0 ? 'text-success' : 'text-danger'; ?>">
+                            <?php echo htmlspecialchars($info); ?>
+                        </small>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        </div>
     </div>
 <?php endif; ?>
 
