@@ -11,8 +11,6 @@ try {
     // Add Bowler
     if (isset($_POST['add_bowler'])) {
         $nickname = trim($_POST['nickname']);
-        $first_name = trim($_POST['first_name']);
-        $last_name = trim($_POST['last_name']);
         $dexterity = $_POST['dexterity'];
         $style = $_POST['style'];
         $uba_id = trim($_POST['uba_id']);
@@ -23,10 +21,10 @@ try {
             $error = "Nickname is required";
         } else {
             $stmt = $pdo->prepare("
-                INSERT INTO bowlers (nickname, first_name, last_name, dexterity, style, uba_id, usbc_id, home_house_id)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO bowlers (nickname, dexterity, style, uba_id, usbc_id, home_house_id)
+                VALUES (?, ?, ?, ?, ?, ?)
             ");
-            $stmt->execute([$nickname, $first_name, $last_name, $dexterity, $style, $uba_id, $usbc_id, $home_house_id]);
+            $stmt->execute([$nickname, $dexterity, $style, $uba_id, $usbc_id, $home_house_id]);
             $message = "Bowler '$nickname' added successfully!";
         }
     }
@@ -34,20 +32,17 @@ try {
     // Add Location
     if (isset($_POST['add_location'])) {
         $name = trim($_POST['location_name']);
-        $address = trim($_POST['address']);
         $city = trim($_POST['city']);
         $state = trim($_POST['state']);
-        $zip_code = trim($_POST['zip_code']);
-        $phone = trim($_POST['phone']);
         
         if (empty($name)) {
             $error = "Location name is required";
         } else {
             $stmt = $pdo->prepare("
-                INSERT INTO locations (name, address, city, state, zip_code, phone)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO locations (name, city, state)
+                VALUES (?, ?, ?)
             ");
-            $stmt->execute([$name, $address, $city, $state, $zip_code, $phone]);
+            $stmt->execute([$name, $city, $state]);
             $message = "Location '$name' added successfully!";
         }
     }
@@ -121,14 +116,6 @@ try {
                         <label for="nickname" class="form-label">Nickname *</label>
                         <input type="text" name="nickname" id="nickname" class="form-control" required>
                     </div>
-                    <div class="mb-3">
-                        <label for="first_name" class="form-label">First Name</label>
-                        <input type="text" name="first_name" id="first_name" class="form-control">
-                    </div>
-                    <div class="mb-3">
-                        <label for="last_name" class="form-label">Last Name</label>
-                        <input type="text" name="last_name" id="last_name" class="form-control">
-                    </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -145,9 +132,8 @@ try {
                                 <label for="style" class="form-label">Style</label>
                                 <select name="style" id="style" class="form-select">
                                     <option value="">Select</option>
-                                    <option value="Conventional">Conventional</option>
-                                    <option value="Fingertip">Fingertip</option>
-                                    <option value="Two-Handed">Two-Handed</option>
+                                    <option value="1 Handed">1 Handed</option>
+                                    <option value="2 Handed">2 Handed</option>
                                 </select>
                             </div>
                         </div>
@@ -197,10 +183,6 @@ try {
                         <label for="location_name" class="form-label">Location Name *</label>
                         <input type="text" name="location_name" id="location_name" class="form-control" required>
                     </div>
-                    <div class="mb-3">
-                        <label for="address" class="form-label">Address</label>
-                        <input type="text" name="address" id="address" class="form-control">
-                    </div>
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -208,22 +190,12 @@ try {
                                 <input type="text" name="city" id="city" class="form-control">
                             </div>
                         </div>
-                        <div class="col-md-3">
+                        <div class="col-md-6">
                             <div class="mb-3">
                                 <label for="state" class="form-label">State</label>
                                 <input type="text" name="state" id="state" class="form-control" maxlength="2">
                             </div>
                         </div>
-                        <div class="col-md-3">
-                            <div class="mb-3">
-                                <label for="zip_code" class="form-label">ZIP</label>
-                                <input type="text" name="zip_code" id="zip_code" class="form-control" maxlength="10">
-                            </div>
-                        </div>
-                    </div>
-                    <div class="mb-3">
-                        <label for="phone" class="form-label">Phone</label>
-                        <input type="tel" name="phone" id="phone" class="form-control">
                     </div>
                     <button type="submit" name="add_location" class="btn btn-success w-100">
                         <i class="fas fa-plus me-2"></i>Add Location
