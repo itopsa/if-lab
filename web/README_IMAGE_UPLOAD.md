@@ -46,26 +46,123 @@ sudo chmod -R 755 web/uploads/
 ls -la web/uploads/
 ```
 
-### 2. Python Dependencies
-Ensure the Python script dependencies are installed:
+### 2. AWS Configuration
+**IMPORTANT**: AWS credentials are required for OCR functionality.
+
+#### Option A: AWS CLI Configuration (Recommended)
+```bash
+# SSH to your server
+ssh root@your-server-ip
+
+# Install AWS CLI using official method
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+unzip awscliv2.zip
+sudo ./aws/install
+
+# Verify installation
+aws --version
+
+# Configure AWS credentials
+aws configure
+
+# Enter your AWS credentials when prompted:
+# AWS Access Key ID: [your_access_key]
+# AWS Secret Access Key: [your_secret_key]
+# Default region name: us-east-1
+# Default output format: json
+```
+
+#### Option B: Environment Variables
+```bash
+# SSH to your server
+ssh root@your-server-ip
+
+# Set environment variables for Apache
+sudo nano /etc/apache2/envvars
+
+# Add these lines to the file:
+export AWS_ACCESS_KEY_ID=your_access_key_here
+export AWS_SECRET_ACCESS_KEY=your_secret_key_here
+export AWS_DEFAULT_REGION=us-east-1
+
+# Restart Apache to apply changes
+sudo systemctl restart apache2
+```
+
+#### Option C: AWS Credentials File
+```bash
+# SSH to your server
+ssh root@your-server-ip
+
+# Create AWS credentials directory
+sudo mkdir -p /var/www/.aws
+
+# Create credentials file
+sudo nano /var/www/.aws/credentials
+
+# Add your credentials:
+[default]
+aws_access_key_id = your_access_key_here
+aws_secret_access_key = your_secret_key_here
+
+# Create config file
+sudo nano /var/www/.aws/config
+
+# Add your configuration:
+[default]
+region = us-east-1
+output = json
+
+# Set proper permissions
+sudo chown -R www-data:www-data /var/www/.aws
+sudo chmod -R 600 /var/www/.aws
+```
+
+### 3. AWS IAM Permissions
+Ensure your AWS user/role has the following permissions for Amazon Textract:
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "textract:DetectDocumentText",
+                "textract:AnalyzeDocument"
+            ],
+            "Resource": "*"
+        }
+    ]
+}
+```
+
+### 4. PHP AWS SDK Installation
+```bash
+# SSH to your server
+ssh root@your-server-ip
+
+# Navigate to your project directory
+cd /var/www/html/if-lab
+
+# Install Composer if not already installed
+curl -sS https://getcomposer.org/installer | php
+sudo mv composer.phar /usr/local/bin/composer
+
+# Install AWS SDK for PHP
+composer require aws/aws-sdk-php
+
+# Or if you prefer to install globally
+sudo composer global require aws/aws-sdk-php
+```
+
+### 5. Python Dependencies (Alternative)
+If you prefer to use the Python version:
 ```bash
 # Install boto3 for AWS Textract
 pip install boto3
 
 # Or if using pip3
 pip3 install boto3
-```
-
-### 3. AWS Configuration
-The Python script requires AWS credentials for Textract:
-```bash
-# Configure AWS credentials
-aws configure
-
-# Or set environment variables
-export AWS_ACCESS_KEY_ID=your_access_key
-export AWS_SECRET_ACCESS_KEY=your_secret_key
-export AWS_DEFAULT_REGION=us-east-1
 ```
 
 ## Usage
@@ -100,6 +197,27 @@ If you get "Failed to move uploaded file" error:
 
 **Permanent Fix**: Run the permission commands above on your Ubuntu server.
 
+### AWS Configuration Issues
+If OCR processing fails:
+
+1. **Check AWS credentials**:
+   ```bash
+   aws sts get-caller-identity
+   ```
+
+2. **Test Textract access**:
+   ```bash
+   aws textract detect-document-text --document '{"S3Object":{"Bucket":"test-bucket","Name":"test-image.jpg"}}'
+   ```
+
+3. **Check environment variables**:
+   ```bash
+   echo $AWS_ACCESS_KEY_ID
+   echo $AWS_SECRET_ACCESS_KEY
+   ```
+
+4. **Verify IAM permissions** - Ensure your AWS user has Textract permissions
+
 ### Python Script Issues
 If the Python script fails:
 1. Check if `boto3` is installed: `pip list | grep boto3`
@@ -120,7 +238,7 @@ If import fails:
 - GIF (.gif)
 
 ### Generated CSV Format
-The Python script generates a CSV with these columns:
+The system generates a CSV with these columns:
 - `bowler_nickname`: Bowler's name
 - `location_name`: Bowling alley name
 - `event_date`: Date of the event
@@ -134,10 +252,11 @@ The Python script generates a CSV with these columns:
 - Uploaded files are moved to a secure directory
 - Database operations use prepared statements
 - Error messages don't expose sensitive information
+- AWS credentials should be kept secure and not committed to version control
 
 ## Performance Notes
 - Large images may take longer to process
-- Python script execution time depends on image complexity
+- OCR processing time depends on image complexity and AWS Textract response time
 - Database import uses transactions for data integrity
 
 ## Future Enhancements
@@ -145,3 +264,4 @@ The Python script generates a CSV with these columns:
 - Image preprocessing for better OCR accuracy
 - Export functionality for processed data
 - Integration with other bowling management systems
+- Real-time OCR processing status updates
