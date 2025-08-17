@@ -1,6 +1,23 @@
 <?php
+require_once '../config.php';
+
 // Simple test - no includes, no complex logic
 echo "<!-- Starting image upload page -->";
+
+// Basic file upload handling
+$upload_message = '';
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    echo "<!-- POST request detected -->";
+    
+    if (isset($_FILES['bowling_image'])) {
+        echo "<!-- File upload detected -->";
+        $upload_message = '<div class="alert alert-success">File upload detected! Processing will be added next.</div>';
+    } else {
+        echo "<!-- No file uploaded -->";
+        $upload_message = '<div class="alert alert-warning">No file was uploaded. Please select a file and try again.</div>';
+    }
+}
 ?>
 
 <div class="container-fluid">
@@ -16,6 +33,16 @@ echo "<!-- Starting image upload page -->";
                     <h1>Image Upload Admin Page</h1>
                     <p>This page is working!</p>
                     <p>Current time: <?php echo date('Y-m-d H:i:s'); ?></p>
+                    
+                    <!-- Debug info -->
+                    <div class="alert alert-info">
+                        <strong>Debug Info:</strong> 
+                        Request Method: <?php echo $_SERVER['REQUEST_METHOD']; ?> | 
+                        Files Count: <?php echo count($_FILES); ?> | 
+                        POST Count: <?php echo count($_POST); ?>
+                    </div>
+                    
+                    <?php echo $upload_message; ?>
                     
                     <!-- Simple upload form -->
                     <div class="row">
