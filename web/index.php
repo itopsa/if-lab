@@ -186,6 +186,9 @@ error_log("Requested page: " . $page);
                                 echo "<div class='alert alert-danger'>Error: image_upload_admin.php file not found!</div>";
                             }
                             break;
+                        case 'test':
+                            include 'test_page.php';
+                            break;
                         case 'login':
                             include 'pages/login.php';
                             exit; // Exit to prevent main layout from loading
