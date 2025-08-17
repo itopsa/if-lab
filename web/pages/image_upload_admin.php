@@ -29,7 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         echo "<!-- File upload detected -->";
         
         // Fix the upload directory path - use absolute path from web root
-        $upload_dir = dirname(__FILE__) . '/../uploads/';
+        $upload_dir = dirname(dirname(__FILE__)) . '/uploads/';
         echo "<!-- Upload directory: " . $upload_dir . " -->";
         echo "<!-- Directory exists: " . (is_dir($upload_dir) ? 'Yes' : 'No') . " -->";
         echo "<!-- Directory writable: " . (is_writable($upload_dir) ? 'Yes' : 'No') . " -->";
