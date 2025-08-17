@@ -138,9 +138,6 @@ error_log("Requested page: " . $page);
                         <a class="nav-link <?php echo $page == 'admin' ? 'active' : ''; ?>" href="?page=admin">
                             <i class="fas fa-cog me-2"></i>Admin
                         </a>
-                        <a class="nav-link <?php echo $page == 'image_upload_admin' ? 'active' : ''; ?>" href="?page=image_upload_admin">
-                            <i class="fas fa-image me-2"></i>Image Upload
-                        </a>
                     </nav>
                 </div>
             </div>
@@ -173,18 +170,6 @@ error_log("Requested page: " . $page);
                             break;
                         case 'admin':
                             include 'pages/admin.php';
-                            break;
-                        case 'image_upload_admin':
-                            echo "<!-- Including image_upload_admin.php -->";
-                            echo "<!-- File path: pages/image_upload_admin.php -->";
-                            if (file_exists('pages/image_upload_admin.php')) {
-                                echo "<!-- File exists, including... -->";
-                                include 'pages/image_upload_admin.php';
-                                echo "<!-- Finished including image_upload_admin.php -->";
-                            } else {
-                                echo "<!-- File does not exist! -->";
-                                echo "<div class='alert alert-danger'>Error: image_upload_admin.php file not found!</div>";
-                            }
                             break;
                         case 'test':
                             include 'test_page.php';
