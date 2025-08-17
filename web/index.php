@@ -4,6 +4,9 @@ require_once 'auth.php';
 
 // Get current page
 $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
+
+// Debug: Check what page is being requested
+error_log("Requested page: " . $page);
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -146,6 +149,9 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
             <div class="col-md-9 col-lg-10">
                 <div class="main-content p-4">
                     <?php
+                    // Debug: Show which page is being processed
+                    echo "<!-- Processing page: $page -->";
+                    
                     switch($page) {
                         case 'dashboard':
                             include 'pages/dashboard.php';
@@ -169,7 +175,16 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
                             include 'pages/admin.php';
                             break;
                         case 'image_upload_admin':
-                            include 'pages/image_upload_admin.php';
+                            echo "<!-- Including image_upload_admin.php -->";
+                            echo "<!-- File path: pages/image_upload_admin.php -->";
+                            if (file_exists('pages/image_upload_admin.php')) {
+                                echo "<!-- File exists, including... -->";
+                                include 'pages/image_upload_admin.php';
+                                echo "<!-- Finished including image_upload_admin.php -->";
+                            } else {
+                                echo "<!-- File does not exist! -->";
+                                echo "<div class='alert alert-danger'>Error: image_upload_admin.php file not found!</div>";
+                            }
                             break;
                         case 'login':
                             include 'pages/login.php';
