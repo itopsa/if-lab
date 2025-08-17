@@ -135,6 +135,9 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
                         <a class="nav-link <?php echo $page == 'admin' ? 'active' : ''; ?>" href="?page=admin">
                             <i class="fas fa-cog me-2"></i>Admin
                         </a>
+                        <a class="nav-link <?php echo $page == 'image_upload_admin' ? 'active' : ''; ?>" href="?page=image_upload_admin">
+                            <i class="fas fa-image me-2"></i>Image Upload
+                        </a>
                     </nav>
                 </div>
             </div>
@@ -164,6 +167,9 @@ $page = isset($_GET['page']) ? $_GET['page'] : 'dashboard';
                             break;
                         case 'admin':
                             include 'pages/admin.php';
+                            break;
+                        case 'image_upload_admin':
+                            include 'pages/image_upload_admin.php';
                             break;
                         case 'login':
                             include 'pages/login.php';

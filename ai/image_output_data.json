@@ -1,0 +1,150 @@
+{
+  "match_info": {
+    "team1_name": "THUNDERSTUCK",
+    "team2_name": "IF UNLIMITED",
+    "date": "8/15/2025",
+    "match_type": "Handicap"
+  },
+  "bowlers": [
+    {
+      "lane_number": 1,
+      "name": "STEFFEN SCHENKENBERGER",
+      "average": 241,
+      "handicap": 0,
+      "game1_score": 184,
+      "game2_score": 205,
+      "game3_score": 194,
+      "total_score": 583
+    },
+    {
+      "lane_number": 2,
+      "name": "TYLER POLACHEK",
+      "average": 226,
+      "handicap": 0,
+      "game1_score": 227,
+      "game2_score": 193,
+      "game3_score": 225,
+      "total_score": 645
+    },
+    {
+      "lane_number": 685,
+      "name": "FRANKIE GHYGLIOTTI",
+      "average": 221,
+      "handicap": 0,
+      "game1_score": 221,
+      "game2_score": 238,
+      "game3_score": 244,
+      "total_score": 703
+    },
+    {
+      "lane_number": 643,
+      "name": "ED ZIEMAK",
+      "average": 242,
+      "handicap": 0,
+      "game1_score": 227,
+      "game2_score": 235,
+      "game3_score": 239,
+      "total_score": 701
+    },
+    {
+      "lane_number": 3,
+      "name": "LOUIE FOLGORE",
+      "average": 232,
+      "handicap": 0,
+      "game1_score": 237,
+      "game2_score": 245,
+      "game3_score": 225,
+      "total_score": 707
+    },
+    {
+      "lane_number": 4,
+      "name": "RICK GUEVARRA",
+      "average": 216,
+      "handicap": 11,
+      "game1_score": 169,
+      "game2_score": 202,
+      "game3_score": 278,
+      "total_score": 649
+    },
+    {
+      "lane_number": 559,
+      "name": "LEN SONALAN",
+      "average": 130,
+      "handicap": 80,
+      "game1_score": 146,
+      "game2_score": 104,
+      "game3_score": 147,
+      "total_score": 397
+    },
+    {
+      "lane_number": 706,
+      "name": "JJ SONALAN",
+      "average": 222,
+      "handicap": 6,
+      "game1_score": 202,
+      "game2_score": 241,
+      "game3_score": 256,
+      "total_score": 699
+    },
+    {
+      "lane_number": 644,
+      "name": "TOTO SONALAN",
+      "average": 228,
+      "handicap": 1,
+      "game1_score": 213,
+      "game2_score": 156,
+      "game3_score": 210,
+      "total_score": 579
+    },
+    {
+      "lane_number": 5,
+      "name": "ETHAN SHAMIM",
+      "average": 220,
+      "handicap": 8,
+      "game1_score": 247,
+      "game2_score": 188,
+      "game3_score": 229,
+      "total_score": 664
+    },
+    {
+      "lane_number": 6,
+      "name": "ANTHONY ESCALONA",
+      "average": 220,
+      "handicap": 8,
+      "game1_score": 185,
+      "game2_score": 180,
+      "game3_score": 223,
+      "total_score": 588
+    },
+    {
+      "lane_number": 645,
+      "name": "CIELO TUNTITHAVORN",
+      "average": 188,
+      "handicap": 33,
+      "game1_score": 205,
+      "game2_score": 176,
+      "game3_score": 152,
+      "total_score": 533
+    },
+    {
+      "lane_number": 588,
+      "name": "FRANKIE SANCHEZ",
+      "average": 223,
+      "handicap": 5,
+      "game1_score": 202,
+      "game2_score": 201,
+      "game3_score": 198,
+      "total_score": 601
+    },
+    {
+      "lane_number": 627,
+      "name": "HARVEY CHOI",
+      "average": 228,
+      "handicap": 1,
+      "game1_score": 192,
+      "game2_score": 190,
+      "game3_score": 163,
+      "total_score": 545
+    }
+  ]
+}
