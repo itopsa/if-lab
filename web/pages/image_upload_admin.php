@@ -9,59 +9,70 @@ $upload_message = '';
 $extraction_results = null;
 $csv_data = null;
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_FILES['bowling_image'])) {
-    echo "<!-- File upload detected -->";
+// Debug: Show what's in $_POST and $_FILES
+echo "<!-- POST data: " . print_r($_POST, true) . " -->";
+echo "<!-- FILES data: " . print_r($_FILES, true) . " -->";
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    echo "<!-- POST request detected -->";
     
-    $upload_dir = '../uploads/';
-    if (!is_dir($upload_dir)) {
-        mkdir($upload_dir, 0755, true);
-    }
-    
-    $file = $_FILES['bowling_image'];
-    $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
-    
-    echo "<!-- File info: " . $file['name'] . " (type: " . $file['type'] . ", error: " . $file['error'] . ") -->";
-    
-    if ($file['error'] === UPLOAD_ERR_OK && in_array($file['type'], $allowed_types)) {
-        $filename = 'bowling_' . date('Y-m-d_H-i-s') . '_' . basename($file['name']);
-        $filepath = $upload_dir . $filename;
+    if (isset($_FILES['bowling_image'])) {
+        echo "<!-- File upload detected -->";
         
-        echo "<!-- Attempting to move file to: " . $filepath . " -->";
+        $upload_dir = '../uploads/';
+        if (!is_dir($upload_dir)) {
+            mkdir($upload_dir, 0755, true);
+        }
         
-        if (move_uploaded_file($file['tmp_name'], $filepath)) {
-            echo "<!-- File moved successfully -->";
+        $file = $_FILES['bowling_image'];
+        $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+        
+        echo "<!-- File info: " . $file['name'] . " (type: " . $file['type'] . ", error: " . $file['error'] . ") -->";
+        
+        if ($file['error'] === UPLOAD_ERR_OK && in_array($file['type'], $allowed_types)) {
+            $filename = 'bowling_' . date('Y-m-d_H-i-s') . '_' . basename($file['name']);
+            $filepath = $upload_dir . $filename;
             
-            // Process the image using Python script
-            $python_script = '../../ai/image_to_csv_extractor.py';
-            $output_prefix = 'web_upload_' . date('Y-m-d_H-i-s');
+            echo "<!-- Attempting to move file to: " . $filepath . " -->";
             
-            $command = "cd ../../ai && python image_to_csv_extractor.py " . escapeshellarg($filepath) . " " . escapeshellarg($output_prefix) . " 2>&1";
-            echo "<!-- Executing command: " . $command . " -->";
-            
-            $output = shell_exec($command);
-            echo "<!-- Command output: " . htmlspecialchars($output) . " -->";
-            
-            // Read the generated CSV file
-            $csv_file = "../../ai/{$output_prefix}_database_import.csv";
-            if (file_exists($csv_file)) {
-                $csv_data = [];
-                if (($handle = fopen($csv_file, "r")) !== FALSE) {
-                    $headers = fgetcsv($handle);
-                    while (($data = fgetcsv($handle)) !== FALSE) {
-                        $csv_data[] = array_combine($headers, $data);
-                    }
-                    fclose($handle);
-                }
+            if (move_uploaded_file($file['tmp_name'], $filepath)) {
+                echo "<!-- File moved successfully -->";
                 
-                $upload_message = '<div class="alert alert-success">Image uploaded and processed successfully! Found ' . count($csv_data) . ' bowlers.</div>';
+                // Process the image using Python script
+                $python_script = '../../ai/image_to_csv_extractor.py';
+                $output_prefix = 'web_upload_' . date('Y-m-d_H-i-s');
+                
+                $command = "cd ../../ai && python image_to_csv_extractor.py " . escapeshellarg($filepath) . " " . escapeshellarg($output_prefix) . " 2>&1";
+                echo "<!-- Executing command: " . $command . " -->";
+                
+                $output = shell_exec($command);
+                echo "<!-- Command output: " . htmlspecialchars($output) . " -->";
+                
+                // Read the generated CSV file
+                $csv_file = "../../ai/{$output_prefix}_database_import.csv";
+                if (file_exists($csv_file)) {
+                    $csv_data = [];
+                    if (($handle = fopen($csv_file, "r")) !== FALSE) {
+                        $headers = fgetcsv($handle);
+                        while (($data = fgetcsv($handle)) !== FALSE) {
+                            $csv_data[] = array_combine($headers, $data);
+                        }
+                        fclose($handle);
+                    }
+                    
+                    $upload_message = '<div class="alert alert-success">Image uploaded and processed successfully! Found ' . count($csv_data) . ' bowlers.</div>';
+                } else {
+                    $upload_message = '<div class="alert alert-warning">Image uploaded but CSV processing failed. Output: ' . htmlspecialchars($output) . '</div>';
+                }
             } else {
-                $upload_message = '<div class="alert alert-warning">Image uploaded but CSV processing failed. Output: ' . htmlspecialchars($output) . '</div>';
+                $upload_message = '<div class="alert alert-danger">Failed to move uploaded file.</div>';
             }
         } else {
-            $upload_message = '<div class="alert alert-danger">Failed to move uploaded file.</div>';
+            $upload_message = '<div class="alert alert-danger">Invalid file type. Please upload a JPEG, PNG, or GIF image. Error code: ' . $file['error'] . '</div>';
         }
     } else {
-        $upload_message = '<div class="alert alert-danger">Invalid file type. Please upload a JPEG, PNG, or GIF image. Error code: ' . $file['error'] . '</div>';
+        echo "<!-- No file uploaded -->";
+        $upload_message = '<div class="alert alert-warning">No file was uploaded. Please select a file and try again.</div>';
     }
 }
 
@@ -152,6 +163,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_to_database'])
                     </h5>
                 </div>
                 <div class="card-body">
+                    <!-- Debug info -->
+                    <div class="alert alert-info">
+                        <strong>Debug Info:</strong> 
+                        Request Method: <?php echo $_SERVER['REQUEST_METHOD']; ?> | 
+                        Files Count: <?php echo count($_FILES); ?> | 
+                        POST Count: <?php echo count($_POST); ?>
+                    </div>
+                    
                     <?php echo $upload_message; ?>
                     <?php echo $import_message; ?>
                     
@@ -163,13 +182,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_to_database'])
                                     <h6 class="mb-0">Upload Bowling Sheet Image</h6>
                                 </div>
                                 <div class="card-body">
-                                    <form method="POST" enctype="multipart/form-data">
+                                    <form method="POST" enctype="multipart/form-data" id="uploadForm">
                                         <div class="mb-3">
                                             <label for="bowling_image" class="form-label">Select Image File</label>
                                             <input type="file" class="form-control" id="bowling_image" name="bowling_image" accept="image/*" required>
                                             <div class="form-text">Supported formats: JPEG, PNG, GIF. Max size: 10MB</div>
                                         </div>
-                                        <button type="submit" class="btn btn-primary">
+                                        <button type="submit" class="btn btn-primary" id="uploadBtn">
                                             <i class="fas fa-upload me-2"></i>Upload & Extract Data
                                         </button>
                                     </form>
@@ -318,6 +337,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['import_to_database'])
 
 <script>
 $(document).ready(function() {
+    // Add form submission feedback
+    $('#uploadForm').on('submit', function() {
+        $('#uploadBtn').html('<i class="fas fa-spinner fa-spin me-2"></i>Processing...');
+        $('#uploadBtn').prop('disabled', true);
+    });
+    
     if ($('#extractedDataTable').length) {
         $('#extractedDataTable').DataTable({
             pageLength: 25,
