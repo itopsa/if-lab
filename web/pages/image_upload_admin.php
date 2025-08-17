@@ -66,9 +66,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo "<!-- Python script path: " . $python_script_path . " -->";
                 echo "<!-- Python script exists: " . (file_exists($python_script_path) ? 'Yes' : 'No') . " -->";
                 
-                // Check if Python is available
-                $python_check = shell_exec("which python 2>&1");
-                echo "<!-- Python location: " . htmlspecialchars($python_check) . " -->";
+                // Test if Python works at all
+                $python_test = shell_exec("python --version 2>&1");
+                echo "<!-- Python version test: " . htmlspecialchars($python_test) . " -->";
+                
+                // Test if we can change directory
+                $cd_test = shell_exec("cd ../../ai && pwd 2>&1");
+                echo "<!-- CD test result: " . htmlspecialchars($cd_test) . " -->";
+                
+                // Try a simpler approach - test the script directly
+                $simple_test = shell_exec("python ../../ai/image_to_csv_extractor.py --help 2>&1");
+                echo "<!-- Simple script test: " . htmlspecialchars($simple_test) . " -->";
                 
                 $command = "cd ../../ai && python image_to_csv_extractor.py " . escapeshellarg($filepath) . " " . escapeshellarg($output_prefix) . " 2>&1";
                 echo "<!-- Executing command: " . $command . " -->";
