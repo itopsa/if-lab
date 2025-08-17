@@ -28,15 +28,26 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['bowling_image'])) {
         echo "<!-- File upload detected -->";
         
-        $upload_dir = '../uploads/';
+        // Fix the upload directory path - use absolute path from web root
+        $upload_dir = dirname(__FILE__) . '/../uploads/';
+        echo "<!-- Upload directory: " . $upload_dir . " -->";
+        echo "<!-- Directory exists: " . (is_dir($upload_dir) ? 'Yes' : 'No') . " -->";
+        echo "<!-- Directory writable: " . (is_writable($upload_dir) ? 'Yes' : 'No') . " -->";
+        
         if (!is_dir($upload_dir)) {
-            mkdir($upload_dir, 0755, true);
+            echo "<!-- Creating upload directory -->";
+            if (!mkdir($upload_dir, 0755, true)) {
+                $upload_message = '<div class="alert alert-danger">Failed to create upload directory: ' . $upload_dir . '</div>';
+            }
         }
         
         $file = $_FILES['bowling_image'];
         $allowed_types = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
         
         echo "<!-- File info: " . $file['name'] . " (type: " . $file['type'] . ", error: " . $file['error'] . ") -->";
+        echo "<!-- File size: " . $file['size'] . " bytes -->";
+        echo "<!-- Temp file: " . $file['tmp_name'] . " -->";
+        echo "<!-- Temp file exists: " . (file_exists($file['tmp_name']) ? 'Yes' : 'No') . " -->";
         
         if ($file['error'] === UPLOAD_ERR_OK && in_array($file['type'], $allowed_types)) {
             $filename = 'bowling_' . date('Y-m-d_H-i-s') . '_' . basename($file['name']);
@@ -73,7 +84,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $upload_message = '<div class="alert alert-warning">Image uploaded but CSV processing failed. Output: ' . htmlspecialchars($output) . '</div>';
                 }
             } else {
-                $upload_message = '<div class="alert alert-danger">Failed to move uploaded file.</div>';
+                $upload_message = '<div class="alert alert-danger">Failed to move uploaded file. Error: ' . error_get_last()['message'] . '</div>';
             }
         } else {
             $upload_message = '<div class="alert alert-danger">Invalid file type. Please upload a JPEG, PNG, or GIF image. Error code: ' . $file['error'] . '</div>';
