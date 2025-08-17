@@ -66,6 +66,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 echo "<!-- Python script path: " . $python_script_path . " -->";
                 echo "<!-- Python script exists: " . (file_exists($python_script_path) ? 'Yes' : 'No') . " -->";
                 
+                // Test if shell_exec works at all
+                $basic_test = shell_exec("echo 'Hello World' 2>&1");
+                echo "<!-- Basic shell_exec test: " . htmlspecialchars($basic_test) . " -->";
+                
                 // Test if Python works at all
                 $python_test = shell_exec("python --version 2>&1");
                 echo "<!-- Python version test: " . htmlspecialchars($python_test) . " -->";
@@ -77,6 +81,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Try a simpler approach - test the script directly
                 $simple_test = shell_exec("python ../../ai/image_to_csv_extractor.py --help 2>&1");
                 echo "<!-- Simple script test: " . htmlspecialchars($simple_test) . " -->";
+                
+                // Try with full path to Python
+                $full_path_test = shell_exec("/usr/bin/python3 --version 2>&1");
+                echo "<!-- Full path Python test: " . htmlspecialchars($full_path_test) . " -->";
                 
                 $command = "cd ../../ai && python image_to_csv_extractor.py " . escapeshellarg($filepath) . " " . escapeshellarg($output_prefix) . " 2>&1";
                 echo "<!-- Executing command: " . $command . " -->";
