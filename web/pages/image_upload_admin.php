@@ -1,8 +1,22 @@
 <?php
-require_once '../config.php';
-
 // Simple test - no includes, no complex logic
 echo "<!-- Starting image upload page -->";
+
+// Simple database connection function (only when needed)
+function getSimpleDBConnection() {
+    $host = 'localhost';
+    $dbname = 'bowling_db';
+    $username = 'root';
+    $password = 'MySecureP@ssw0rd2024!';
+    
+    try {
+        $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8", $username, $password);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+        return $pdo;
+    } catch(PDOException $e) {
+        return null; // Return null instead of die() to avoid blank page
+    }
+}
 
 // Basic file upload handling
 $upload_message = '';
