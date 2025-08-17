@@ -28,8 +28,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_FILES['bowling_image'])) {
         echo "<!-- File upload detected -->";
         
-        // Fix the upload directory path - use absolute path from web root
-        $upload_dir = dirname(dirname(__FILE__)) . '/uploads/';
+        // Fix the upload directory path - use /tmp as temporary workaround
+        $upload_dir = '/tmp/bowling_uploads/';
         echo "<!-- Upload directory: " . $upload_dir . " -->";
         echo "<!-- Directory exists: " . (is_dir($upload_dir) ? 'Yes' : 'No') . " -->";
         echo "<!-- Directory writable: " . (is_writable($upload_dir) ? 'Yes' : 'No') . " -->";
@@ -61,14 +61,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 // Process the image using Python script
                 $output_prefix = 'web_upload_' . date('Y-m-d_H-i-s');
                 
+                // Check if Python script exists
+                $python_script_path = "../../ai/image_to_csv_extractor.py";
+                echo "<!-- Python script path: " . $python_script_path . " -->";
+                echo "<!-- Python script exists: " . (file_exists($python_script_path) ? 'Yes' : 'No') . " -->";
+                
+                // Check if Python is available
+                $python_check = shell_exec("which python 2>&1");
+                echo "<!-- Python location: " . htmlspecialchars($python_check) . " -->";
+                
                 $command = "cd ../../ai && python image_to_csv_extractor.py " . escapeshellarg($filepath) . " " . escapeshellarg($output_prefix) . " 2>&1";
                 echo "<!-- Executing command: " . $command . " -->";
                 
                 $output = shell_exec($command);
                 echo "<!-- Command output: " . htmlspecialchars($output) . " -->";
+                echo "<!-- Command return code: " . (isset($output) ? 'Success' : 'Failed') . " -->";
+                
+                // Check if output file was created
+                $csv_file = "../../ai/{$output_prefix}_database_import.csv";
+                echo "<!-- Expected CSV file: " . $csv_file . " -->";
+                echo "<!-- CSV file exists: " . (file_exists($csv_file) ? 'Yes' : 'No') . " -->";
                 
                 // Read the generated CSV file
-                $csv_file = "../../ai/{$output_prefix}_database_import.csv";
                 if (file_exists($csv_file)) {
                     $csv_data = [];
                     if (($handle = fopen($csv_file, "r")) !== FALSE) {

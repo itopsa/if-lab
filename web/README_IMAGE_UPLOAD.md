@@ -1,138 +1,147 @@
 # Image Upload Admin Feature
 
 ## Overview
-
-The Image Upload Admin page allows administrators to upload bowling sheet images and automatically extract bowler data using AI-powered OCR (Optical Character Recognition).
+The Image Upload Admin feature allows administrators to upload bowling score sheet images and automatically extract bowler data using AI-powered OCR (Optical Character Recognition).
 
 ## Features
+- **Image Upload**: Support for JPEG, PNG, and GIF formats up to 10MB
+- **AI Data Extraction**: Uses Amazon Textract via Python script to extract bowler information
+- **Data Display**: Shows extracted data in a formatted table with statistics
+- **Database Import**: One-click import of extracted data to the bowling database
+- **Auto Creation**: Automatically creates new bowlers and locations as needed
 
-### ✅ **Image Upload**
-- Supports JPEG, PNG, and GIF formats
-- Automatic file validation and security checks
-- Unique filename generation to prevent conflicts
-
-### ✅ **AI Data Extraction**
-- Uses Amazon Textract for OCR processing
-- Extracts bowler names, scores, and match information
-- Processes data using the Python image-to-CSV extractor
-
-### ✅ **Data Display**
-- Shows extracted data in a formatted table
-- Displays statistics (total bowlers, total pins, average score, high series)
-- Uses the same header format as `image_output_database_import.csv`
-
-### ✅ **Database Integration**
-- One-click import to bowling database
-- Automatic bowler and location creation if they don't exist
-- Transaction-based import with error handling
-
-## Usage
-
-### 1. **Access the Page**
-Navigate to: `?page=image_upload_admin`
-
-### 2. **Upload Image**
-- Click "Choose File" and select a bowling sheet image
-- Click "Upload & Extract Data"
-- Wait for processing to complete
-
-### 3. **Review Results**
-- View extracted bowler data in the table
-- Check statistics cards for match overview
-- Verify data accuracy before importing
-
-### 4. **Import to Database**
-- Click "Import to Database" button
-- System will automatically:
-  - Create new bowlers if they don't exist
-  - Create new locations if they don't exist
-  - Import all game series data
-
-## Data Format
-
-The extracted data follows the same format as the database import CSV:
-
-```csv
-bowler_nickname,location_name,event_date,game1_score,game2_score,game3_score,series_type
-ANTHONY ESCALONA,Unknown Location,8/15/2025,185,180,223,Tour Stop
-```
-
-## Technical Details
-
-### **File Structure**
+## File Structure
 ```
 web/
 ├── pages/
-│   └── image_upload_admin.php    # Main admin page
-├── uploads/                      # Uploaded images directory
-└── index.php                     # Updated with new navigation
+│   └── image_upload_admin.php    # Main upload interface
+├── uploads/                      # Upload directory (requires permissions)
+└── README_IMAGE_UPLOAD.md        # This file
+
+ai/
+├── image_to_csv_extractor.py     # Python OCR script
+└── example_usage.py              # Usage examples
 ```
 
-### **Dependencies**
-- Python script: `ai/image_to_csv_extractor.py`
-- AWS Textract access (configured in Python script)
-- PHP file upload capabilities
-- Database connection (via `config.php`)
+## Setup Instructions
 
-### **Security Features**
-- File type validation
-- File size limits
-- Secure file naming
-- SQL injection prevention
-- XSS protection
+### 1. Upload Directory Permissions
+**IMPORTANT**: The web server needs write permissions to the uploads directory.
 
-## Error Handling
+On your Ubuntu server, run these commands:
+```bash
+# SSH to your server
+ssh root@your-server-ip
 
-The system handles various error scenarios:
-- Invalid file types
-- Upload failures
-- OCR processing errors
-- Database import errors
-- Missing dependencies
+# Navigate to project directory
+cd /var/www/html/if-lab
 
-## Example Workflow
+# Fix ownership (web server user)
+sudo chown -R www-data:www-data web/uploads/
 
-1. **Upload Image**: Admin uploads `bowling_sheet.jpg`
-2. **Process**: Python script extracts data using Textract
-3. **Display**: Results shown in web interface
-4. **Import**: Data imported to database with automatic bowler/location creation
-5. **Verify**: Data appears in main bowling application
+# Fix permissions (readable/writable by web server)
+sudo chmod -R 755 web/uploads/
 
-## Integration
+# Verify the changes
+ls -la web/uploads/
+```
 
-This feature integrates seamlessly with the existing bowling application:
-- Uses same database schema
-- Follows existing UI patterns
-- Compatible with all existing views and reports
-- Data immediately available in dashboard and other pages
+### 2. Python Dependencies
+Ensure the Python script dependencies are installed:
+```bash
+# Install boto3 for AWS Textract
+pip install boto3
+
+# Or if using pip3
+pip3 install boto3
+```
+
+### 3. AWS Configuration
+The Python script requires AWS credentials for Textract:
+```bash
+# Configure AWS credentials
+aws configure
+
+# Or set environment variables
+export AWS_ACCESS_KEY_ID=your_access_key
+export AWS_SECRET_ACCESS_KEY=your_secret_key
+export AWS_DEFAULT_REGION=us-east-1
+```
+
+## Usage
+
+### 1. Access the Upload Page
+Navigate to: `http://your-domain/bowling-db/?page=image_upload_admin`
+
+### 2. Upload Image
+1. Click "Choose File" and select a bowling score sheet image
+2. Click "Upload & Extract Data"
+3. Wait for processing (button will show "Processing...")
+
+### 3. Review Data
+- View extracted bowler information in the table
+- Check statistics (total bowlers, pins, averages, high series)
+- Verify data accuracy before importing
+
+### 4. Import to Database
+1. Click "Import to Database" button
+2. System will automatically:
+   - Create new bowlers if they don't exist
+   - Create new locations if they don't exist
+   - Insert game series data
+   - Show import results
 
 ## Troubleshooting
 
-### **Common Issues**
+### Upload Directory Issues
+If you get "Failed to move uploaded file" error:
 
-1. **Upload Fails**
-   - Check file type (JPEG, PNG, GIF only)
-   - Verify file size (max 10MB)
-   - Ensure uploads directory is writable
+**Temporary Fix**: The code currently uses `/tmp/bowling_uploads/` as a workaround.
 
-2. **OCR Processing Fails**
-   - Verify AWS credentials are configured
-   - Check image quality (clear, readable text)
-   - Ensure Python script is accessible
+**Permanent Fix**: Run the permission commands above on your Ubuntu server.
 
-3. **Database Import Fails**
-   - Check database connection
-   - Verify table permissions
-   - Review error messages for specific issues
+### Python Script Issues
+If the Python script fails:
+1. Check if `boto3` is installed: `pip list | grep boto3`
+2. Verify AWS credentials are configured
+3. Check the command output in the debug comments
 
-### **Debug Information**
-The system provides detailed error messages and processing output to help troubleshoot issues.
+### Database Import Issues
+If import fails:
+1. Check database connection in `config.php`
+2. Verify table structure matches expected format
+3. Check for duplicate entries or constraint violations
+
+## File Formats
+
+### Supported Image Formats
+- JPEG (.jpg, .jpeg)
+- PNG (.png)
+- GIF (.gif)
+
+### Generated CSV Format
+The Python script generates a CSV with these columns:
+- `bowler_nickname`: Bowler's name
+- `location_name`: Bowling alley name
+- `event_date`: Date of the event
+- `game1_score`: Score for game 1
+- `game2_score`: Score for game 2
+- `game3_score`: Score for game 3
+- `series_type`: Type of series (League, Tournament, etc.)
+
+## Security Notes
+- File uploads are validated for type and size
+- Uploaded files are moved to a secure directory
+- Database operations use prepared statements
+- Error messages don't expose sensitive information
+
+## Performance Notes
+- Large images may take longer to process
+- Python script execution time depends on image complexity
+- Database import uses transactions for data integrity
 
 ## Future Enhancements
-
-Potential improvements:
-- Batch image processing
-- Image quality validation
-- OCR confidence scoring
-- Manual data correction interface
-- Export to additional formats
+- Batch upload support
+- Image preprocessing for better OCR accuracy
+- Export functionality for processed data
+- Integration with other bowling management systems
