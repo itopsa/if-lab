@@ -529,11 +529,16 @@ try {
             </div>
             <div class="card-body">
                 <form method="POST">
-                    <div class="mb-3 position-relative">
-                        <label for="bowler_search" class="form-label">Bowler *</label>
-                        <input type="text" id="bowler_search" class="form-control" placeholder="Type bowler name..." autocomplete="off" required>
-                        <input type="hidden" name="bowler_id" id="bowler_id" required>
-                        <div id="bowler_suggestions" class="list-group position-absolute" style="z-index: 1000; max-height: 200px; overflow-y: auto; display: none; width: 100%; top: 100%; border: 1px solid #ddd; border-radius: 0.375rem; box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15);"></div>
+                    <div class="mb-3">
+                        <label for="bowler_id" class="form-label">Bowler *</label>
+                        <select name="bowler_id" id="bowler_id" class="form-select" required>
+                            <option value="">Select Bowler</option>
+                            <?php foreach ($bowlers as $bowler): ?>
+                                <option value="<?php echo $bowler['bowler_id']; ?>">
+                                    <?php echo htmlspecialchars($bowler['nickname']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div class="mb-3">
                         <label for="location_id" class="form-label">Location</label>
@@ -755,104 +760,6 @@ $(document).ready(function() {
         console.log(`Total: ${total}, Average: ${average.toFixed(1)}`);
     });
     
-    // Bowler autocomplete functionality
-    const bowlers = <?php echo json_encode($bowlers); ?>;
-    console.log('Bowlers data sample:', bowlers.slice(0, 3));
-    const bowlerSearch = $('#bowler_search');
-    const bowlerSuggestions = $('#bowler_suggestions');
-    const bowlerIdInput = $('#bowler_id');
-    
-    console.log('Autocomplete initialized with', bowlers.length, 'bowlers');
-    console.log('Bowler search element:', bowlerSearch.length);
-    console.log('Bowler suggestions element:', bowlerSuggestions.length);
-    
-    // Test if the input field exists and can be typed in
-    if (bowlerSearch.length > 0) {
-        console.log('Bowler search field found, adding event handlers');
-        bowlerSearch.focus();
-        console.log('Focus test - if you see this, the field is working');
-    } else {
-        console.error('Bowler search field not found!');
-    }
-    
-    bowlerSearch.on('input', function() {
-        console.log('Input event triggered, value:', $(this).val());
-        const query = $(this).val().toLowerCase();
-        
-        if (query.length < 1) {
-            console.log('Query too short, hiding suggestions');
-            bowlerSuggestions.hide();
-            return;
-        }
-        
-        console.log('Filtering bowlers for query:', query);
-        const filteredBowlers = bowlers.filter(bowler => 
-            bowler.nickname.toLowerCase().includes(query)
-        );
-        
-        console.log('Found', filteredBowlers.length, 'matching bowlers');
-        
-        if (filteredBowlers.length > 0) {
-            bowlerSuggestions.empty();
-            filteredBowlers.forEach(bowler => {
-                const item = $(`<a href="#" class="list-group-item list-group-item-action" data-id="${bowler.bowler_id}" data-name="${bowler.nickname}">${bowler.nickname}</a>`);
-                bowlerSuggestions.append(item);
-            });
-            console.log('Showing suggestions');
-            bowlerSuggestions.show();
-        } else {
-            console.log('No matches, hiding suggestions');
-            bowlerSuggestions.hide();
-        }
-    });
-    
-    // Handle suggestion selection
-    bowlerSuggestions.on('click', 'a', function(e) {
-        e.preventDefault();
-        const bowlerId = $(this).data('id');
-        const bowlerName = $(this).data('name');
-        
-        bowlerSearch.val(bowlerName);
-        bowlerIdInput.val(bowlerId);
-        bowlerSuggestions.hide();
-    });
-    
-    // Hide suggestions when clicking outside
-    $(document).on('click', function(e) {
-        if (!$(e.target).closest('#bowler_search, #bowler_suggestions').length) {
-            bowlerSuggestions.hide();
-        }
-    });
-    
-    // Handle keyboard navigation
-    bowlerSearch.on('keydown', function(e) {
-        const visibleSuggestions = bowlerSuggestions.find('a:visible');
-        
-        if (e.key === 'ArrowDown') {
-            e.preventDefault();
-            const currentFocus = bowlerSuggestions.find('a:focus');
-            if (currentFocus.length) {
-                currentFocus.next().focus();
-            } else {
-                visibleSuggestions.first().focus();
-            }
-        } else if (e.key === 'ArrowUp') {
-            e.preventDefault();
-            const currentFocus = bowlerSuggestions.find('a:focus');
-            if (currentFocus.length) {
-                currentFocus.prev().focus();
-            } else {
-                visibleSuggestions.last().focus();
-            }
-        } else if (e.key === 'Enter') {
-            e.preventDefault();
-            const focusedSuggestion = bowlerSuggestions.find('a:focus');
-            if (focusedSuggestion.length) {
-                focusedSuggestion.click();
-            }
-        } else if (e.key === 'Escape') {
-            bowlerSuggestions.hide();
-        }
-    });
+
 });
 </script>
