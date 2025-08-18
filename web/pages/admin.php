@@ -757,6 +757,7 @@ $(document).ready(function() {
     
     // Bowler autocomplete functionality
     const bowlers = <?php echo json_encode($bowlers); ?>;
+    console.log('Bowlers data sample:', bowlers.slice(0, 3));
     const bowlerSearch = $('#bowler_search');
     const bowlerSuggestions = $('#bowler_suggestions');
     const bowlerIdInput = $('#bowler_id');
@@ -765,17 +766,31 @@ $(document).ready(function() {
     console.log('Bowler search element:', bowlerSearch.length);
     console.log('Bowler suggestions element:', bowlerSuggestions.length);
     
+    // Test if the input field exists and can be typed in
+    if (bowlerSearch.length > 0) {
+        console.log('Bowler search field found, adding event handlers');
+        bowlerSearch.focus();
+        console.log('Focus test - if you see this, the field is working');
+    } else {
+        console.error('Bowler search field not found!');
+    }
+    
     bowlerSearch.on('input', function() {
+        console.log('Input event triggered, value:', $(this).val());
         const query = $(this).val().toLowerCase();
         
         if (query.length < 1) {
+            console.log('Query too short, hiding suggestions');
             bowlerSuggestions.hide();
             return;
         }
         
+        console.log('Filtering bowlers for query:', query);
         const filteredBowlers = bowlers.filter(bowler => 
             bowler.nickname.toLowerCase().includes(query)
         );
+        
+        console.log('Found', filteredBowlers.length, 'matching bowlers');
         
         if (filteredBowlers.length > 0) {
             bowlerSuggestions.empty();
@@ -783,8 +798,10 @@ $(document).ready(function() {
                 const item = $(`<a href="#" class="list-group-item list-group-item-action" data-id="${bowler.bowler_id}" data-name="${bowler.nickname}">${bowler.nickname}</a>`);
                 bowlerSuggestions.append(item);
             });
+            console.log('Showing suggestions');
             bowlerSuggestions.show();
         } else {
+            console.log('No matches, hiding suggestions');
             bowlerSuggestions.hide();
         }
     });
